@@ -8,5 +8,5 @@
         x:Class="EfGui.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
         Title="EfGui">
-        <views:MainView />
+        <views:MainView x:Name="MainView" />
 </Window>

@@ -1,6 +1,8 @@
-﻿namespace EfGui.ViewModels;
+﻿using System.Windows.Input;
+
+namespace EfGui.ViewModels;
 
 public class MainViewModel : ViewModelBase
 {
-    public string Greeting => "Welcome to Avalonia!";
+    public ICommand ListMigrations { get; set; }
 }
