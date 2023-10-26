@@ -15,7 +15,7 @@
   <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, *">
     <StackPanel Width="170" Orientation="Vertical" HorizontalAlignment="Stretch" Grid.Row="0" Grid.Column="0">
       <Button Content="List migrations" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Command="{Binding ListMigrations}"></Button>
-      <Button Content="Add migration" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+      <Button Content="Add migration" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Command="{Binding AddMigration}">
         <Button.Flyout>
           <Flyout Placement="Right">
             <StackPanel HorizontalAlignment="Stretch" Orientation="Horizontal">
@@ -25,8 +25,8 @@
           </Flyout>
         </Button.Flyout>
       </Button>
-      <Button Content="Remove last migration" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"></Button>
-      <Button Content="Generate script" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"></Button>
+      <Button Content="Remove last migration" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Command="{Binding RemoveLastMigration}"></Button>
+      <Button Content="Generate script" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Command="{Binding GenerateScript}"></Button>
     </StackPanel>
     <Border Background="Black" Grid.Row="0" Grid.Column="1" Grid.RowSpan="2" VerticalAlignment="Stretch">
       <ScrollViewer x:Name="ScrollViewer">
