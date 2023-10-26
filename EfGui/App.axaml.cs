@@ -37,6 +37,24 @@ public partial class App : Application
             await action.ExecuteAsync(logger);
         });
 
+        mainViewModel.AddMigration = ReactiveCommand.CreateFromTask(async () =>
+        {
+            var action = new AddMigrationAction();
+            await action.ExecuteAsync(logger);
+        });
+
+        mainViewModel.RemoveLastMigration = ReactiveCommand.CreateFromTask(async () =>
+        {
+            var action = new RemoveLastMigrationAction();
+            await action.ExecuteAsync(logger);
+        });
+
+        mainViewModel.GenerateScript = ReactiveCommand.CreateFromTask(async () =>
+        {
+            var action = new GenerateScriptAction();
+            await action.ExecuteAsync(logger);
+        });
+
         mainWindow.DataContext = mainViewModel;
 
         return mainWindow;
