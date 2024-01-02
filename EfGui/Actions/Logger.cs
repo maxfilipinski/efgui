@@ -20,7 +20,7 @@ public class Logger
     {
         Dispatcher.UIThread.InvokeAsync(() =>
         {
-            _textBlock.Inlines!.Add(message);
+            _textBlock.Inlines!.Add($"{message}\r\n");
             _scrollViewer.ScrollToEnd();
         });
     }

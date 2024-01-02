@@ -5,6 +5,7 @@ using EfGui.Actions;
 using EfGui.ViewModels;
 using EfGui.Views;
 using ReactiveUI;
+using System.Threading.Tasks;
 
 namespace EfGui;
 
@@ -28,34 +29,46 @@ public partial class App : Application
     private MainWindow CreateMainWindow()
     {
         var mainWindow = new MainWindow();
-        var mainViewModel = new MainViewModel();
-        var logger = new Logger(mainWindow.MainView.ScrollViewer, mainWindow.MainView.SelectableTextBlock);
+        var mainWindowViewModel = new MainWindowViewModel();
+        var logger = new Logger(mainWindow.ScrollViewer, mainWindow.SelectableTextBlock);
 
-        mainViewModel.ListMigrations = ReactiveCommand.CreateFromTask(async () =>
+        mainWindowViewModel.AddProfile = ReactiveCommand.CreateFromTask(async () =>
+        {
+            var action = new AddProfileAction();
+            await Task.Delay(10);
+        });
+
+        mainWindowViewModel.EditProfile = ReactiveCommand.CreateFromTask(async () =>
+        {
+            var action = new EditProfileAction();
+            await Task.Delay(10);
+        });
+
+        mainWindowViewModel.ListMigrations = ReactiveCommand.CreateFromTask(async () =>
         {
             var action = new ListMigrationsAction();
             await action.ExecuteAsync(logger);
         });
 
-        mainViewModel.AddMigration = ReactiveCommand.CreateFromTask(async () =>
+        mainWindowViewModel.AddMigration = ReactiveCommand.CreateFromTask(async () =>
         {
             var action = new AddMigrationAction();
             await action.ExecuteAsync(logger);
         });
 
-        mainViewModel.RemoveLastMigration = ReactiveCommand.CreateFromTask(async () =>
+        mainWindowViewModel.RemoveLastMigration = ReactiveCommand.CreateFromTask(async () =>
         {
             var action = new RemoveLastMigrationAction();
             await action.ExecuteAsync(logger);
         });
 
-        mainViewModel.GenerateScript = ReactiveCommand.CreateFromTask(async () =>
+        mainWindowViewModel.GenerateScript = ReactiveCommand.CreateFromTask(async () =>
         {
             var action = new GenerateScriptAction();
             await action.ExecuteAsync(logger);
         });
 
-        mainWindow.DataContext = mainViewModel;
+        mainWindow.DataContext = mainWindowViewModel;
 
         return mainWindow;
     }
