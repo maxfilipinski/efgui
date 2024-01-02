@@ -14,9 +14,9 @@ public static class ActionsResolver
     {
         try
         {
-            Console.WriteLine($"Started operation: {options.ActionName}");
+            logger.LogInfo($"Started operation: {options.ActionName}");
 
-            Console.WriteLine("Running dotnet-ef command...");
+            logger.LogInfo("Running dotnet-ef command...");
             await Cli.Wrap("dotnet-ef")
                 .WithArguments(args =>
                 {
@@ -32,7 +32,7 @@ public static class ActionsResolver
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.ToString());
+            logger.LogInfo(ex.ToString());
         }
     }
 }
