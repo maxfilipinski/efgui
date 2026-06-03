@@ -1,0 +1,101 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:EfGui.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="560" d:DesignHeight="640"
+        x:Class="EfGui.Views.ProfileEditorWindow"
+        x:DataType="vm:ProfileEditorViewModel"
+        Title="{Binding Title}"
+        Width="560" SizeToContent="Height"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+
+  <Design.DataContext>
+    <vm:ProfileEditorViewModel/>
+  </Design.DataContext>
+
+  <Window.Styles>
+    <Style Selector="TextBlock.label">
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="Margin" Value="0 0 12 0"/>
+    </Style>
+    <Style Selector="Grid.form > TextBox, Grid.form > ComboBox, Grid.form > Grid">
+      <Setter Property="Margin" Value="0 4"/>
+    </Style>
+  </Window.Styles>
+
+  <StackPanel Margin="16" Spacing="8">
+    <Grid Classes="form" ColumnDefinitions="160, *"
+          RowDefinitions="Auto, Auto, Auto, Auto, Auto, Auto, Auto">
+      <TextBlock Classes="label" Grid.Row="0" Grid.Column="0" Text="Profile name"/>
+      <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Name}"/>
+
+      <TextBlock Classes="label" Grid.Row="1" Grid.Column="0" Text="Project (.csproj)"/>
+      <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*, Auto">
+        <TextBox Grid.Column="0" Text="{Binding CsprojPath}"/>
+        <Button Grid.Column="1" Content="Browse…" Margin="6 0 0 0" Click="BrowseCsproj_Click"/>
+      </Grid>
+
+      <TextBlock Classes="label" Grid.Row="2" Grid.Column="0" Text="DbContext class"/>
+      <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding DbContextName}"
+               PlaceholderText="MyApp.Data.AppDbContext"/>
+
+      <TextBlock Classes="label" Grid.Row="3" Grid.Column="0" Text="Migrations directory"/>
+      <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding MigrationsDir}" PlaceholderText="Migrations"/>
+
+      <TextBlock Classes="label" Grid.Row="4" Grid.Column="0" Text="Target framework"/>
+      <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding TargetFramework}" PlaceholderText="net10.0"/>
+
+      <TextBlock Classes="label" Grid.Row="5" Grid.Column="0" Text="dotnet-ef version"/>
+      <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding DotnetEfVersion}"/>
+
+      <TextBlock Classes="label" Grid.Row="6" Grid.Column="0" Text="EF Core Design version"/>
+      <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding EfCoreDesignVersion}"/>
+    </Grid>
+
+    <Separator/>
+
+    <TextBlock Text="Database configuration" FontWeight="SemiBold"/>
+    <StackPanel Orientation="Horizontal" Spacing="16">
+      <RadioButton GroupName="DbMode" Content="Connection string"
+                   IsChecked="{Binding IsConnectionStringMode}"/>
+      <RadioButton GroupName="DbMode" Content="Custom code"
+                   IsChecked="{Binding UseCustomCode}"/>
+    </StackPanel>
+
+    <Grid Classes="form" ColumnDefinitions="160, *" RowDefinitions="Auto, Auto, Auto"
+          IsVisible="{Binding IsConnectionStringMode}">
+      <TextBlock Classes="label" Grid.Row="0" Grid.Column="0" Text="Provider"/>
+      <ComboBox Grid.Row="0" Grid.Column="1" HorizontalAlignment="Stretch"
+                ItemsSource="{Binding Providers}"
+                SelectedItem="{Binding SelectedProvider}"
+                DisplayMemberBinding="{Binding DisplayName}"/>
+
+      <TextBlock Classes="label" Grid.Row="1" Grid.Column="0" Text="Connection string"/>
+      <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ConnectionString}"/>
+
+      <TextBlock Classes="label" Grid.Row="2" Grid.Column="0" Text="Provider version"/>
+      <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding ProviderPackageVersion}"
+               PlaceholderText="same as EF Core Design version"/>
+    </Grid>
+
+    <StackPanel Spacing="4" IsVisible="{Binding UseCustomCode}">
+      <TextBlock Text="C# code configuring the context (an optionsBuilder variable is in scope):"
+                 TextWrapping="Wrap"/>
+      <TextBox Text="{Binding CustomCode}" AcceptsReturn="True" MinHeight="120"
+               FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+               PlaceholderText="optionsBuilder.UseNpgsql(&quot;Host=localhost;Database=mydb&quot;);"/>
+    </StackPanel>
+
+    <TextBlock Text="{Binding ValidationError}" Foreground="OrangeRed" TextWrapping="Wrap"
+               IsVisible="{Binding ValidationError, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+
+    <Grid ColumnDefinitions="Auto, *, Auto, Auto" Margin="0 8 0 0">
+      <Button x:Name="DeleteButton" Grid.Column="0" Content="Delete"
+              IsVisible="{Binding !IsNew}" Click="Delete_Click"/>
+      <Button Grid.Column="2" Content="Cancel" Margin="0 0 8 0" Click="Cancel_Click"/>
+      <Button Grid.Column="3" Content="Save" Classes="accent" Click="Save_Click"/>
+    </Grid>
+  </StackPanel>
+</Window>

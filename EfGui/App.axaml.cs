@@ -2,10 +2,11 @@
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using EfGui.Actions;
+using EfGui.Profiles;
 using EfGui.ViewModels;
 using EfGui.Views;
 using ReactiveUI;
-using System.Threading.Tasks;
+using System.Reactive.Linq;
 
 namespace EfGui;
 
@@ -29,20 +30,33 @@ public partial class App : Application
     private MainWindow CreateMainWindow()
     {
         var mainWindow = new MainWindow();
-        var mainWindowViewModel = new MainWindowViewModel();
+        var profileStore = new ProfileStore();
+        var mainWindowViewModel = new MainWindowViewModel(profileStore);
         var logger = new Logger(mainWindow.ScrollViewer, mainWindow.SelectableTextBlock);
 
         mainWindowViewModel.AddProfile = ReactiveCommand.CreateFromTask(async () =>
         {
-            var action = new AddProfileAction();
-            await Task.Delay(10);
+            var editor = new ProfileEditorWindow(new ProfileEditorViewModel());
+            var result = await editor.ShowDialog<ProfileEditorResult?>(mainWindow);
+            if (result?.Saved != null)
+                mainWindowViewModel.ApplyProfileSaved(result.Saved);
         });
 
-        mainWindowViewModel.EditProfile = ReactiveCommand.CreateFromTask(async () =>
-        {
-            var action = new EditProfileAction();
-            await Task.Delay(10);
-        });
+        mainWindowViewModel.EditProfile = ReactiveCommand.CreateFromTask(
+            async () =>
+            {
+                var profile = mainWindowViewModel.SelectedProfile;
+                if (profile is null)
+                    return;
+
+                var editor = new ProfileEditorWindow(new ProfileEditorViewModel(profile));
+                var result = await editor.ShowDialog<ProfileEditorResult?>(mainWindow);
+                if (result?.Saved != null)
+                    mainWindowViewModel.ApplyProfileSaved(result.Saved);
+                else if (result?.Deleted == true)
+                    mainWindowViewModel.ApplyProfileDeleted(profile.Id);
+            },
+            mainWindowViewModel.WhenAnyValue(vm => vm.SelectedProfile).Select(p => p != null));
 
         mainWindowViewModel.ListMigrations = ReactiveCommand.CreateFromTask(async () =>
         {
