@@ -1,14 +1,15 @@
-﻿using System.Threading.Tasks;
+using EfGui.Services;
+using System.Threading.Tasks;
 
 namespace EfGui.Actions;
 
 public class AddMigrationAction
 {
-    public async Task ExecuteAsync(Logger logger)
+    public async Task ExecuteAsync(ProcessRunner runner, IConsole console)
     {
         var migrationName = "example";
 
-        await ActionsResolver.RunDotnetEfTool(logger, new ActionOptions
+        await ActionsResolver.RunDotnetEfTool(runner, console, new ActionOptions
         {
             ActionName = $"adding migration '{migrationName}'",
             DotnetEfArgs = new[]
