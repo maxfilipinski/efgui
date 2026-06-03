@@ -63,37 +63,40 @@ public partial class App : Application
             },
             hasProfile);
 
+        var actions = new MigrationActions(engine, console);
+        Profile Selected() => mainWindowViewModel.SelectedProfile!;
+
+        var canCreateMigration = mainWindowViewModel
+            .WhenAnyValue(vm => vm.SelectedProfile, vm => vm.MigrationName,
+                (profile, name) => profile != null && !string.IsNullOrWhiteSpace(name));
+
+        mainWindowViewModel.CreateMigration = ReactiveCommand.CreateFromTask(
+            () => actions.CreateMigrationAsync(Selected(), mainWindowViewModel.MigrationName),
+            canCreateMigration);
+
         mainWindowViewModel.ListMigrations = ReactiveCommand.CreateFromTask(
-            async () =>
-            {
-                var action = new ListMigrationsAction();
-                await action.ExecuteAsync(engine, mainWindowViewModel.SelectedProfile!);
-            },
-            hasProfile);
+            () => actions.ListMigrationsAsync(Selected()), hasProfile);
 
-        mainWindowViewModel.AddMigration = ReactiveCommand.CreateFromTask(
-            async () =>
-            {
-                var action = new AddMigrationAction();
-                await action.ExecuteAsync(engine, mainWindowViewModel.SelectedProfile!, "example");
-            },
-            hasProfile);
+        mainWindowViewModel.GenerateFullScript = ReactiveCommand.CreateFromTask(
+            () => actions.GenerateFullScriptAsync(Selected()), hasProfile);
 
-        mainWindowViewModel.RemoveLastMigration = ReactiveCommand.CreateFromTask(
-            async () =>
-            {
-                var action = new RemoveLastMigrationAction();
-                await action.ExecuteAsync(engine, mainWindowViewModel.SelectedProfile!);
-            },
-            hasProfile);
+        mainWindowViewModel.GenerateUnappliedScript = ReactiveCommand.CreateFromTask(
+            () => actions.GenerateUnappliedScriptAsync(Selected()), hasProfile);
 
-        mainWindowViewModel.GenerateScript = ReactiveCommand.CreateFromTask(
-            async () =>
-            {
-                var action = new GenerateScriptAction();
-                await action.ExecuteAsync(engine, console, mainWindowViewModel.SelectedProfile!);
-            },
-            hasProfile);
+        mainWindowViewModel.GenerateOptimizedModel = ReactiveCommand.CreateFromTask(
+            () => actions.GenerateOptimizedModelAsync(Selected()), hasProfile);
+
+        mainWindowViewModel.RemoveLastFromCode = ReactiveCommand.CreateFromTask(
+            () => actions.RemoveLastFromCodeAsync(Selected()), hasProfile);
+
+        mainWindowViewModel.RecreateAndGenerateScript = ReactiveCommand.CreateFromTask(
+            () => actions.RecreateAndGenerateScriptAsync(Selected()), hasProfile);
+
+        mainWindowViewModel.GenerateApplyScript = ReactiveCommand.CreateFromTask(
+            () => actions.GenerateApplyScriptAsync(Selected()), hasProfile);
+
+        mainWindowViewModel.GenerateRollbackScript = ReactiveCommand.CreateFromTask(
+            () => actions.GenerateRollbackScriptAsync(Selected()), hasProfile);
 
         mainWindowViewModel.ClearConsole = ReactiveCommand.Create(console.Clear);
 

@@ -24,6 +24,7 @@ public class MainWindowViewModel : ViewModelBase
     private Profile? _selectedProfile;
     private ConsoleTheme? _selectedConsoleTheme;
     private string _consoleBackgroundHex = ConsoleThemePresets[0].Hex;
+    private string _migrationName = "";
 
     public MainWindowViewModel()
     {
@@ -71,12 +72,23 @@ public class MainWindowViewModel : ViewModelBase
 
     public IBrush ConsoleBackground => new SolidColorBrush(Color.Parse(_consoleBackgroundHex));
 
+    public string MigrationName
+    {
+        get => _migrationName;
+        set => this.RaiseAndSetIfChanged(ref _migrationName, value);
+    }
+
     public ICommand? AddProfile { get; set; }
     public ICommand? EditProfile { get; set; }
+    public ICommand? CreateMigration { get; set; }
     public ICommand? ListMigrations { get; set; }
-    public ICommand? AddMigration { get; set; }
-    public ICommand? RemoveLastMigration { get; set; }
-    public ICommand? GenerateScript { get; set; }
+    public ICommand? GenerateFullScript { get; set; }
+    public ICommand? GenerateUnappliedScript { get; set; }
+    public ICommand? GenerateOptimizedModel { get; set; }
+    public ICommand? RemoveLastFromCode { get; set; }
+    public ICommand? RecreateAndGenerateScript { get; set; }
+    public ICommand? GenerateApplyScript { get; set; }
+    public ICommand? GenerateRollbackScript { get; set; }
     public ICommand? ClearConsole { get; set; }
 
     public void ApplyProfileSaved(Profile profile)
