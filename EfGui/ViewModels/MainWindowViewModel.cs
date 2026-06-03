@@ -85,6 +85,14 @@ public class MainWindowViewModel : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _isBusy, value);
     }
 
+    public const double DefaultSidebarWidth = 200;
+
+    public double SidebarWidth
+    {
+        get => _store?.SidebarWidth ?? DefaultSidebarWidth;
+        set => _store?.SetSidebarWidth(value);
+    }
+
     public ICommand? AddProfile { get; set; }
     public ICommand? EditProfile { get; set; }
     public ICommand? CreateMigration { get; set; }
