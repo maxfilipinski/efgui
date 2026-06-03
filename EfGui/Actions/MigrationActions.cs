@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace EfGui.Actions;
@@ -26,28 +27,28 @@ public partial class MigrationActions
         _console = console;
     }
 
-    public async Task CreateMigrationAsync(Profile profile, string name)
+    public async Task CreateMigrationAsync(Profile profile, string name, CancellationToken cancellationToken = default)
     {
         await _engine.RunAsync(profile, new[]
         {
             "migrations", "add", name.Trim(),
             "--output-dir", profile.MigrationsDir
-        });
+        }, cancellationToken);
     }
 
-    public async Task ListMigrationsAsync(Profile profile)
+    public async Task ListMigrationsAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        await _engine.RunAsync(profile, new[] { "migrations", "list" });
+        await _engine.RunAsync(profile, new[] { "migrations", "list" }, cancellationToken);
     }
 
-    public async Task GenerateFullScriptAsync(Profile profile)
+    public async Task GenerateFullScriptAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        await GenerateScriptAsync(profile, from: null, to: null, "full");
+        await GenerateScriptAsync(profile, from: null, to: null, "full", cancellationToken);
     }
 
-    public async Task GenerateUnappliedScriptAsync(Profile profile)
+    public async Task GenerateUnappliedScriptAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        var migrations = await GetMigrationsAsync(profile, connect: true);
+        var migrations = await GetMigrationsAsync(profile, connect: true, cancellationToken);
         if (migrations is null)
             return;
 
@@ -64,23 +65,23 @@ public partial class MigrationActions
         }
 
         var lastApplied = migrations.LastOrDefault(m => !m.Pending)?.Id ?? "0";
-        await GenerateScriptAsync(profile, lastApplied, migrations[^1].Id, "unapplied");
+        await GenerateScriptAsync(profile, lastApplied, migrations[^1].Id, "unapplied", cancellationToken);
     }
 
-    public async Task GenerateOptimizedModelAsync(Profile profile)
+    public async Task GenerateOptimizedModelAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        await _engine.RunAsync(profile, new[] { "dbcontext", "optimize" });
+        await _engine.RunAsync(profile, new[] { "dbcontext", "optimize" }, cancellationToken);
     }
 
-    public async Task RemoveLastFromCodeAsync(Profile profile)
+    public async Task RemoveLastFromCodeAsync(Profile profile, CancellationToken cancellationToken = default)
     {
         // --force: remove from code regardless of whether the migration was applied to the database.
-        await _engine.RunAsync(profile, new[] { "migrations", "remove", "--force" });
+        await _engine.RunAsync(profile, new[] { "migrations", "remove", "--force" }, cancellationToken);
     }
 
-    public async Task RecreateAndGenerateScriptAsync(Profile profile)
+    public async Task RecreateAndGenerateScriptAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        var migrations = await GetMigrationsAsync(profile, connect: false);
+        var migrations = await GetMigrationsAsync(profile, connect: false, cancellationToken);
         if (migrations is null || migrations.Count == 0)
         {
             _console.WriteLine(ConsoleMessageKind.Error, "No migrations found to recreate.");
@@ -93,18 +94,24 @@ public partial class MigrationActions
 
         _console.WriteLine(ConsoleMessageKind.Info, $"Recreating migration '{name}'...");
 
-        await _engine.RunAsync(profile, new[] { "migrations", "remove", "--force" });
-        await _engine.RunAsync(profile, new[]
+        var removed = await _engine.RunAsync(profile, new[] { "migrations", "remove", "--force" }, cancellationToken);
+        if (removed?.Succeeded != true)
+            return;
+
+        var added = await _engine.RunAsync(profile, new[]
         {
             "migrations", "add", name,
             "--output-dir", profile.MigrationsDir
-        });
-        await GenerateScriptAsync(profile, previous, to: null, "recreated");
+        }, cancellationToken);
+        if (added?.Succeeded != true)
+            return;
+
+        await GenerateScriptAsync(profile, previous, to: null, "recreated", cancellationToken);
     }
 
-    public async Task GenerateApplyScriptAsync(Profile profile)
+    public async Task GenerateApplyScriptAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        var migrations = await GetMigrationsAsync(profile, connect: false);
+        var migrations = await GetMigrationsAsync(profile, connect: false, cancellationToken);
         if (migrations is null || migrations.Count == 0)
         {
             _console.WriteLine(ConsoleMessageKind.Error, "No migrations found.");
@@ -112,12 +119,12 @@ public partial class MigrationActions
         }
 
         var previous = migrations.Count >= 2 ? migrations[^2].Id : "0";
-        await GenerateScriptAsync(profile, previous, migrations[^1].Id, "apply");
+        await GenerateScriptAsync(profile, previous, migrations[^1].Id, "apply", cancellationToken);
     }
 
-    public async Task GenerateRollbackScriptAsync(Profile profile)
+    public async Task GenerateRollbackScriptAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        var migrations = await GetMigrationsAsync(profile, connect: false);
+        var migrations = await GetMigrationsAsync(profile, connect: false, cancellationToken);
         if (migrations is null || migrations.Count == 0)
         {
             _console.WriteLine(ConsoleMessageKind.Error, "No migrations found.");
@@ -125,18 +132,18 @@ public partial class MigrationActions
         }
 
         var previous = migrations.Count >= 2 ? migrations[^2].Id : "0";
-        await GenerateScriptAsync(profile, migrations[^1].Id, previous, "rollback");
+        await GenerateScriptAsync(profile, migrations[^1].Id, previous, "rollback", cancellationToken);
     }
 
     private record MigrationEntry(string Id, bool Pending);
 
-    private async Task<List<MigrationEntry>?> GetMigrationsAsync(Profile profile, bool connect)
+    private async Task<List<MigrationEntry>?> GetMigrationsAsync(Profile profile, bool connect, CancellationToken cancellationToken)
     {
         var args = new List<string> { "migrations", "list" };
         if (!connect)
             args.Add("--no-connect");
 
-        var result = await _engine.RunAsync(profile, args);
+        var result = await _engine.RunAsync(profile, args, cancellationToken);
         if (result is not { Succeeded: true })
             return null;
 
@@ -154,7 +161,7 @@ public partial class MigrationActions
             .ToList();
     }
 
-    private async Task GenerateScriptAsync(Profile profile, string? from, string? to, string label)
+    private async Task GenerateScriptAsync(Profile profile, string? from, string? to, string label, CancellationToken cancellationToken)
     {
         var path = Path.Combine(
             Path.GetTempPath(),
@@ -168,7 +175,7 @@ public partial class MigrationActions
         args.Add("--output");
         args.Add(path);
 
-        var result = await _engine.RunAsync(profile, args);
+        var result = await _engine.RunAsync(profile, args, cancellationToken);
         if (result?.Succeeded != true)
             return;
 
