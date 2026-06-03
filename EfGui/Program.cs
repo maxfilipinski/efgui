@@ -2,7 +2,7 @@
 using ReactiveUI.Avalonia;
 using System;
 
-namespace EfGui.Desktop;
+namespace EfGui;
 
 class Program
 {
