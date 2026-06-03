@@ -16,12 +16,14 @@
     </Design.DataContext>
 
     <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, Auto, *">
-      <StackPanel Grid.Row="0" Grid.Column="1" Margin="0 12 12 12" Orientation="Horizontal" HorizontalAlignment="Stretch">
-        <ComboBox SelectedIndex="0" MaxDropDownHeight="5" HorizontalAlignment="Stretch">
-          <ComboBoxItem>Test 1</ComboBoxItem>
-        </ComboBox>
-        <Button Content="Edit" VerticalAlignment="Stretch" Command="{Binding EditProfile}"></Button>
-        <Button Content="Add" VerticalAlignment="Stretch" Command="{Binding AddProfile}"></Button>
+      <StackPanel Grid.Row="0" Grid.Column="1" Margin="0 12 12 12" Orientation="Horizontal" Spacing="6">
+        <TextBlock Text="Profile:" VerticalAlignment="Center"/>
+        <ComboBox MinWidth="240" VerticalAlignment="Center"
+                  ItemsSource="{Binding Profiles}"
+                  SelectedItem="{Binding SelectedProfile}"
+                  DisplayMemberBinding="{Binding Name}"/>
+        <Button Content="Edit" VerticalAlignment="Stretch" Command="{Binding EditProfile}"/>
+        <Button Content="Add" VerticalAlignment="Stretch" Command="{Binding AddProfile}"/>
       </StackPanel>
       <StackPanel Width="170" Orientation="Vertical" HorizontalAlignment="Stretch" Grid.Row="1" Grid.Column="0" Margin="12 0 12 12">
         <Button Content="List migrations" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0 0 0 4" Command="{Binding ListMigrations}"></Button>
