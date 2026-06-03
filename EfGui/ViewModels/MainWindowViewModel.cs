@@ -25,6 +25,7 @@ public class MainWindowViewModel : ViewModelBase
     private ConsoleTheme? _selectedConsoleTheme;
     private string _consoleBackgroundHex = ConsoleThemePresets[0].Hex;
     private string _migrationName = "";
+    private bool _isBusy;
 
     public MainWindowViewModel()
     {
@@ -78,6 +79,12 @@ public class MainWindowViewModel : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _migrationName, value);
     }
 
+    public bool IsBusy
+    {
+        get => _isBusy;
+        set => this.RaiseAndSetIfChanged(ref _isBusy, value);
+    }
+
     public ICommand? AddProfile { get; set; }
     public ICommand? EditProfile { get; set; }
     public ICommand? CreateMigration { get; set; }
@@ -89,6 +96,7 @@ public class MainWindowViewModel : ViewModelBase
     public ICommand? RecreateAndGenerateScript { get; set; }
     public ICommand? GenerateApplyScript { get; set; }
     public ICommand? GenerateRollbackScript { get; set; }
+    public ICommand? CancelOperation { get; set; }
     public ICommand? ClearConsole { get; set; }
 
     public void ApplyProfileSaved(Profile profile)

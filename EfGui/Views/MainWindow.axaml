@@ -30,7 +30,7 @@
       </Style>
     </Window.Styles>
 
-    <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, *">
+    <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, *, Auto">
       <StackPanel Grid.Row="0" Grid.Column="1" Margin="0 12 12 12" Orientation="Horizontal" Spacing="6">
         <TextBlock Text="Profile:" VerticalAlignment="Center"/>
         <ComboBox MinWidth="240" VerticalAlignment="Center"
@@ -44,13 +44,21 @@
                   ItemsSource="{Binding ConsoleThemes}"
                   SelectedItem="{Binding SelectedConsoleTheme}"
                   DisplayMemberBinding="{Binding Name}"/>
+        <Button Content="Stop" VerticalAlignment="Stretch"
+                Background="#A93434" Foreground="White"
+                IsVisible="{Binding IsBusy}"
+                Command="{Binding CancelOperation}"/>
       </StackPanel>
 
       <StackPanel Classes="sidebar" Width="200" Grid.Row="1" Grid.Column="0" Margin="12 0 12 12">
         <TextBlock Classes="section" Text="Create migration" Margin="0 0 0 2"/>
         <Grid ColumnDefinitions="*, Auto">
           <TextBox Grid.Column="0" Text="{Binding MigrationName}"
-                   PlaceholderText="MigrationName" FontSize="12"/>
+                   PlaceholderText="MigrationName" FontSize="12">
+            <TextBox.KeyBindings>
+              <KeyBinding Gesture="Enter" Command="{Binding CreateMigration}"/>
+            </TextBox.KeyBindings>
+          </TextBox>
           <Button Grid.Column="1" Content="+" Margin="4 0 0 0"
                   VerticalAlignment="Stretch"
                   Command="{Binding CreateMigration}"/>
@@ -77,5 +85,10 @@
                                FontSize="12"/>
         </ScrollViewer>
       </Border>
+
+      <ProgressBar Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                   Height="4" Margin="12 0 12 8"
+                   IsIndeterminate="{Binding IsBusy}"
+                   IsVisible="{Binding IsBusy}"/>
     </Grid>
 </Window>
