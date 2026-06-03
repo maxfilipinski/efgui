@@ -1,24 +1,17 @@
-using EfGui.Services;
+using EfGui.Engine;
+using EfGui.Profiles;
 using System.Threading.Tasks;
 
 namespace EfGui.Actions;
 
 public class AddMigrationAction
 {
-    public async Task ExecuteAsync(ProcessRunner runner, IConsole console)
+    public async Task ExecuteAsync(EfCoreEngine engine, Profile profile, string migrationName)
     {
-        var migrationName = "example";
-
-        await ActionsResolver.RunDotnetEfTool(runner, console, new ActionOptions
+        await engine.RunAsync(profile, new[]
         {
-            ActionName = $"adding migration '{migrationName}'",
-            DotnetEfArgs = new[]
-            {
-                "migrations",
-                "add",
-                migrationName,
-                "--json"
-            }
+            "migrations", "add", migrationName,
+            "--output-dir", profile.MigrationsDir
         });
     }
 }

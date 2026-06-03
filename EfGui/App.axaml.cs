@@ -2,6 +2,7 @@
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using EfGui.Actions;
+using EfGui.Engine;
 using EfGui.Profiles;
 using EfGui.Services;
 using EfGui.ViewModels;
@@ -35,6 +36,8 @@ public partial class App : Application
         var mainWindowViewModel = new MainWindowViewModel(profileStore);
         var console = new ConsoleRenderer(mainWindow.ScrollViewer, mainWindow.SelectableTextBlock);
         var runner = new ProcessRunner(console);
+        var engine = new EfCoreEngine(runner, console, new DotnetEfTool(runner, console));
+        var hasProfile = mainWindowViewModel.WhenAnyValue(vm => vm.SelectedProfile).Select(p => p != null);
 
         mainWindowViewModel.AddProfile = ReactiveCommand.CreateFromTask(async () =>
         {
@@ -58,31 +61,39 @@ public partial class App : Application
                 else if (result?.Deleted == true)
                     mainWindowViewModel.ApplyProfileDeleted(profile.Id);
             },
-            mainWindowViewModel.WhenAnyValue(vm => vm.SelectedProfile).Select(p => p != null));
+            hasProfile);
 
-        mainWindowViewModel.ListMigrations = ReactiveCommand.CreateFromTask(async () =>
-        {
-            var action = new ListMigrationsAction();
-            await action.ExecuteAsync(runner, console);
-        });
+        mainWindowViewModel.ListMigrations = ReactiveCommand.CreateFromTask(
+            async () =>
+            {
+                var action = new ListMigrationsAction();
+                await action.ExecuteAsync(engine, mainWindowViewModel.SelectedProfile!);
+            },
+            hasProfile);
 
-        mainWindowViewModel.AddMigration = ReactiveCommand.CreateFromTask(async () =>
-        {
-            var action = new AddMigrationAction();
-            await action.ExecuteAsync(runner, console);
-        });
+        mainWindowViewModel.AddMigration = ReactiveCommand.CreateFromTask(
+            async () =>
+            {
+                var action = new AddMigrationAction();
+                await action.ExecuteAsync(engine, mainWindowViewModel.SelectedProfile!, "example");
+            },
+            hasProfile);
 
-        mainWindowViewModel.RemoveLastMigration = ReactiveCommand.CreateFromTask(async () =>
-        {
-            var action = new RemoveLastMigrationAction();
-            await action.ExecuteAsync(runner, console);
-        });
+        mainWindowViewModel.RemoveLastMigration = ReactiveCommand.CreateFromTask(
+            async () =>
+            {
+                var action = new RemoveLastMigrationAction();
+                await action.ExecuteAsync(engine, mainWindowViewModel.SelectedProfile!);
+            },
+            hasProfile);
 
-        mainWindowViewModel.GenerateScript = ReactiveCommand.CreateFromTask(async () =>
-        {
-            var action = new GenerateScriptAction();
-            await action.ExecuteAsync(runner, console);
-        });
+        mainWindowViewModel.GenerateScript = ReactiveCommand.CreateFromTask(
+            async () =>
+            {
+                var action = new GenerateScriptAction();
+                await action.ExecuteAsync(engine, console, mainWindowViewModel.SelectedProfile!);
+            },
+            hasProfile);
 
         mainWindowViewModel.ClearConsole = ReactiveCommand.Create(console.Clear);
 
