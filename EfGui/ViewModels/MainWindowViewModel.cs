@@ -26,6 +26,7 @@ public class MainWindowViewModel : ViewModelBase
     private string _consoleBackgroundHex = ConsoleThemePresets[0].Hex;
     private string _migrationName = "";
     private bool _isBusy;
+    private double _consoleFontSize = 13;
 
     public MainWindowViewModel()
     {
@@ -37,6 +38,7 @@ public class MainWindowViewModel : ViewModelBase
         Profiles = new ObservableCollection<Profile>(store.Profiles);
         _selectedProfile = store.LastSelectedProfile;
         _consoleBackgroundHex = store.ConsoleBackground;
+        _consoleFontSize = store.ConsoleFontSize;
         // Null when the stored hex was hand-edited to a non-preset value; the brush still honors it.
         _selectedConsoleTheme = ConsoleThemePresets.FirstOrDefault(t => t.Hex == _consoleBackgroundHex);
     }
@@ -85,13 +87,27 @@ public class MainWindowViewModel : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _isBusy, value);
     }
 
-    public const double DefaultSidebarWidth = 200;
+    public const double DefaultSidebarWidth = 240;
 
     public double SidebarWidth
     {
         get => _store?.SidebarWidth ?? DefaultSidebarWidth;
         set => _store?.SetSidebarWidth(value);
     }
+
+    public double ConsoleFontSize
+    {
+        get => _consoleFontSize;
+        set
+        {
+            var clamped = Math.Clamp(value, 10, 24);
+            this.RaiseAndSetIfChanged(ref _consoleFontSize, clamped);
+            this.RaisePropertyChanged(nameof(ConsoleLineHeight));
+            _store?.SetConsoleFontSize(clamped);
+        }
+    }
+
+    public double ConsoleLineHeight => _consoleFontSize * 1.4;
 
     public ICommand? AddProfile { get; set; }
     public ICommand? EditProfile { get; set; }

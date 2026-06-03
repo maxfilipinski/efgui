@@ -80,6 +80,17 @@ public class ProfileStore
         Save();
     }
 
+    public double ConsoleFontSize => _data.ConsoleFontSize;
+
+    public void SetConsoleFontSize(double size)
+    {
+        if (Math.Abs(_data.ConsoleFontSize - size) < 0.5)
+            return;
+
+        _data.ConsoleFontSize = size;
+        Save();
+    }
+
     public double SidebarWidth => _data.SidebarWidth;
 
     public void SetSidebarWidth(double width)
@@ -120,6 +131,7 @@ public class ProfileStore
         public List<Profile> Profiles { get; set; } = new();
         public Guid? LastSelectedProfileId { get; set; }
         public string ConsoleBackground { get; set; } = "#0C0C0C";
-        public double SidebarWidth { get; set; } = 200;
+        public double ConsoleFontSize { get; set; } = 13;
+        public double SidebarWidth { get; set; } = 240;
     }
 }
