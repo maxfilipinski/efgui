@@ -80,6 +80,17 @@ public class ProfileStore
         Save();
     }
 
+    public double SidebarWidth => _data.SidebarWidth;
+
+    public void SetSidebarWidth(double width)
+    {
+        if (Math.Abs(_data.SidebarWidth - width) < 0.5)
+            return;
+
+        _data.SidebarWidth = width;
+        Save();
+    }
+
     private void Load()
     {
         if (!File.Exists(_filePath))
@@ -109,5 +120,6 @@ public class ProfileStore
         public List<Profile> Profiles { get; set; } = new();
         public Guid? LastSelectedProfileId { get; set; }
         public string ConsoleBackground { get; set; } = "#0C0C0C";
+        public double SidebarWidth { get; set; } = 200;
     }
 }

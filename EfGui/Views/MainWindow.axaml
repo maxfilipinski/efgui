@@ -8,6 +8,7 @@
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Width="900" Height="560"
+        MinWidth="700" MinHeight="400"
         Title="EfGui">
 
     <Design.DataContext>
@@ -28,10 +29,21 @@
         <Setter Property="Opacity" Value="0.7"/>
         <Setter Property="Margin" Value="0 10 0 2"/>
       </Style>
+      <Style Selector="GridSplitter#SidebarSplitter:pointerover">
+        <Setter Property="Background" Value="#40808080"/>
+      </Style>
     </Window.Styles>
 
-    <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, *, Auto">
-      <StackPanel Grid.Row="0" Grid.Column="1" Margin="0 12 12 12" Orientation="Horizontal" Spacing="6">
+    <Grid x:Name="RootGrid" RowDefinitions="Auto, *, Auto">
+      <Grid.ColumnDefinitions>
+        <!-- Min fits the longest action caption; the console column min (not a fixed max
+             here) is what bounds how far the sidebar can grow. -->
+        <ColumnDefinition Width="200" MinWidth="190"/>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*" MinWidth="320"/>
+      </Grid.ColumnDefinitions>
+
+      <StackPanel Grid.Row="0" Grid.Column="2" Margin="0 12 12 12" Orientation="Horizontal" Spacing="6">
         <TextBlock Text="Profile:" VerticalAlignment="Center"/>
         <ComboBox MinWidth="240" VerticalAlignment="Center"
                   ItemsSource="{Binding Profiles}"
@@ -50,7 +62,7 @@
                 Command="{Binding CancelOperation}"/>
       </StackPanel>
 
-      <StackPanel Classes="sidebar" Width="200" Grid.Row="1" Grid.Column="0" Margin="12 0 12 12">
+      <StackPanel Classes="sidebar" Grid.Row="1" Grid.Column="0" Margin="12 0 0 12">
         <TextBlock Classes="section" Text="Create migration" Margin="0 0 0 2"/>
         <Grid ColumnDefinitions="*, Auto">
           <TextBox Grid.Column="0" Text="{Binding MigrationName}"
@@ -77,7 +89,11 @@
         <Button Content="Generate rollback script" Command="{Binding GenerateRollbackScript}"/>
       </StackPanel>
 
-      <Border Background="{Binding ConsoleBackground}" CornerRadius="4" Grid.Row="1" Grid.Column="1" VerticalAlignment="Stretch" Margin="0 0 12 12">
+      <GridSplitter x:Name="SidebarSplitter" Grid.Row="1" Grid.Column="1" Width="8"
+                    Background="Transparent" ResizeDirection="Columns"
+                    DoubleTapped="SidebarSplitter_DoubleTapped"/>
+
+      <Border Background="{Binding ConsoleBackground}" CornerRadius="4" Grid.Row="1" Grid.Column="2" VerticalAlignment="Stretch" Margin="0 0 12 12">
         <ScrollViewer x:Name="ScrollViewer" HorizontalScrollBarVisibility="Auto" Padding="8">
           <SelectableTextBlock x:Name="SelectableTextBlock"
                                Foreground="#C7D5E8"
@@ -86,7 +102,7 @@
         </ScrollViewer>
       </Border>
 
-      <ProgressBar Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+      <ProgressBar Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
                    Height="4" Margin="12 0 12 8"
                    IsIndeterminate="{Binding IsBusy}"
                    IsVisible="{Binding IsBusy}"/>
