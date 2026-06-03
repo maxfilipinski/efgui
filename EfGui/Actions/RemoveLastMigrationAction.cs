@@ -1,21 +1,14 @@
-using EfGui.Services;
+using EfGui.Engine;
+using EfGui.Profiles;
 using System.Threading.Tasks;
 
 namespace EfGui.Actions;
 
 public class RemoveLastMigrationAction
 {
-    public async Task ExecuteAsync(ProcessRunner runner, IConsole console)
+    public async Task ExecuteAsync(EfCoreEngine engine, Profile profile)
     {
-        await ActionsResolver.RunDotnetEfTool(runner, console, new ActionOptions
-        {
-            ActionName = "removing last migration",
-            DotnetEfArgs = new[]
-            {
-                "migrations",
-                "remove",
-                "--json"
-            }
-        });
+        // --force: remove from code regardless of whether the migration was applied to the database.
+        await engine.RunAsync(profile, new[] { "migrations", "remove", "--force" });
     }
 }

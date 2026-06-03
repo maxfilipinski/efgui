@@ -1,20 +1,13 @@
-using EfGui.Services;
+using EfGui.Engine;
+using EfGui.Profiles;
 using System.Threading.Tasks;
 
 namespace EfGui.Actions;
 
 public class ListMigrationsAction
 {
-    public async Task ExecuteAsync(ProcessRunner runner, IConsole console)
+    public async Task ExecuteAsync(EfCoreEngine engine, Profile profile)
     {
-        await ActionsResolver.RunDotnetEfTool(runner, console, new ActionOptions
-        {
-            ActionName = "listing migrations",
-            DotnetEfArgs = new[]
-            {
-                "migrations",
-                "list"
-            }
-        });
+        await engine.RunAsync(profile, new[] { "migrations", "list" });
     }
 }
