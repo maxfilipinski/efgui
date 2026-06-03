@@ -21,12 +21,18 @@
       <Style Selector="StackPanel.sidebar > Button">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
-        <Setter Property="FontSize" Value="12"/>
         <Setter Property="Margin" Value="0 2"/>
+      </Style>
+      <!-- Captions wrap instead of clipping when the sidebar is dragged narrow. -->
+      <Style Selector="StackPanel.sidebar > Button TextBlock">
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="TextAlignment" Value="Center"/>
       </Style>
       <Style Selector="StackPanel.sidebar > TextBlock.section">
         <Setter Property="FontSize" Value="12"/>
-        <Setter Property="Opacity" Value="0.7"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="LetterSpacing" Value="0.4"/>
+        <Setter Property="Opacity" Value="0.8"/>
         <Setter Property="Margin" Value="0 10 0 2"/>
       </Style>
       <Style Selector="GridSplitter#SidebarSplitter:pointerover">
@@ -38,7 +44,7 @@
       <Grid.ColumnDefinitions>
         <!-- Min fits the longest action caption; the console column min (not a fixed max
              here) is what bounds how far the sidebar can grow. -->
-        <ColumnDefinition Width="200" MinWidth="190"/>
+        <ColumnDefinition Width="240" MinWidth="200"/>
         <ColumnDefinition Width="Auto"/>
         <ColumnDefinition Width="*" MinWidth="320"/>
       </Grid.ColumnDefinitions>
@@ -66,7 +72,7 @@
         <TextBlock Classes="section" Text="Create migration" Margin="0 0 0 2"/>
         <Grid ColumnDefinitions="*, Auto">
           <TextBox Grid.Column="0" Text="{Binding MigrationName}"
-                   PlaceholderText="MigrationName" FontSize="12">
+                   PlaceholderText="MigrationName">
             <TextBox.KeyBindings>
               <KeyBinding Gesture="Enter" Command="{Binding CreateMigration}"/>
             </TextBox.KeyBindings>
@@ -98,7 +104,8 @@
           <SelectableTextBlock x:Name="SelectableTextBlock"
                                Foreground="#C7D5E8"
                                FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
-                               FontSize="12"/>
+                               FontSize="{Binding ConsoleFontSize}"
+                               LineHeight="{Binding ConsoleLineHeight}"/>
         </ScrollViewer>
       </Border>
 
