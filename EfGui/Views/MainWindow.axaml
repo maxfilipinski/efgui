@@ -24,6 +24,11 @@
                   DisplayMemberBinding="{Binding Name}"/>
         <Button Content="Edit" VerticalAlignment="Stretch" Command="{Binding EditProfile}"/>
         <Button Content="Add" VerticalAlignment="Stretch" Command="{Binding AddProfile}"/>
+        <Button Content="Clear console" VerticalAlignment="Stretch" Command="{Binding ClearConsole}"/>
+        <ComboBox VerticalAlignment="Center" MinWidth="110"
+                  ItemsSource="{Binding ConsoleThemes}"
+                  SelectedItem="{Binding SelectedConsoleTheme}"
+                  DisplayMemberBinding="{Binding Name}"/>
       </StackPanel>
       <StackPanel Width="170" Orientation="Vertical" HorizontalAlignment="Stretch" Grid.Row="1" Grid.Column="0" Margin="12 0 12 12">
         <Button Content="List migrations" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0 0 0 4" Command="{Binding ListMigrations}"></Button>
@@ -40,9 +45,12 @@
         <Button Content="Remove last migration" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0 4 0 4" Command="{Binding RemoveLastMigration}"></Button>
         <Button Content="Generate script" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0 4 0 4" Command="{Binding GenerateScript}"></Button>
       </StackPanel>
-      <Border Background="Black" Grid.Row="1" Grid.Column="1" Grid.RowSpan="2" VerticalAlignment="Stretch" Margin="0 0 12 12">
-        <ScrollViewer x:Name="ScrollViewer">
-          <SelectableTextBlock x:Name="SelectableTextBlock" Foreground="White"></SelectableTextBlock>
+      <Border Background="{Binding ConsoleBackground}" CornerRadius="4" Grid.Row="1" Grid.Column="1" Grid.RowSpan="2" VerticalAlignment="Stretch" Margin="0 0 12 12">
+        <ScrollViewer x:Name="ScrollViewer" HorizontalScrollBarVisibility="Auto" Padding="8">
+          <SelectableTextBlock x:Name="SelectableTextBlock"
+                               Foreground="#C7D5E8"
+                               FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                               FontSize="12"/>
         </ScrollViewer>
       </Border>
     </Grid>

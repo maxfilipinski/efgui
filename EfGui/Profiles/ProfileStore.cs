@@ -69,6 +69,17 @@ public class ProfileStore
         Save();
     }
 
+    public string ConsoleBackground => _data.ConsoleBackground;
+
+    public void SetConsoleBackground(string hex)
+    {
+        if (_data.ConsoleBackground == hex)
+            return;
+
+        _data.ConsoleBackground = hex;
+        Save();
+    }
+
     private void Load()
     {
         if (!File.Exists(_filePath))
@@ -97,5 +108,6 @@ public class ProfileStore
     {
         public List<Profile> Profiles { get; set; } = new();
         public Guid? LastSelectedProfileId { get; set; }
+        public string ConsoleBackground { get; set; } = "#0C0C0C";
     }
 }

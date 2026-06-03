@@ -1,16 +1,29 @@
+using Avalonia.Media;
 using EfGui.Profiles;
 using ReactiveUI;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
 
 namespace EfGui.ViewModels;
 
+public record ConsoleTheme(string Name, string Hex);
+
 public class MainWindowViewModel : ViewModelBase
 {
+    public static readonly IReadOnlyList<ConsoleTheme> ConsoleThemePresets = new[]
+    {
+        new ConsoleTheme("Black", "#0C0C0C"),
+        new ConsoleTheme("Dark gray", "#1E1E1E"),
+        new ConsoleTheme("Navy", "#0C2B4E")
+    };
+
     private readonly ProfileStore? _store;
     private Profile? _selectedProfile;
+    private ConsoleTheme? _selectedConsoleTheme;
+    private string _consoleBackgroundHex = ConsoleThemePresets[0].Hex;
 
     public MainWindowViewModel()
     {
@@ -21,6 +34,9 @@ public class MainWindowViewModel : ViewModelBase
         _store = store;
         Profiles = new ObservableCollection<Profile>(store.Profiles);
         _selectedProfile = store.LastSelectedProfile;
+        _consoleBackgroundHex = store.ConsoleBackground;
+        // Null when the stored hex was hand-edited to a non-preset value; the brush still honors it.
+        _selectedConsoleTheme = ConsoleThemePresets.FirstOrDefault(t => t.Hex == _consoleBackgroundHex);
     }
 
     public ObservableCollection<Profile> Profiles { get; } = new();
@@ -36,12 +52,32 @@ public class MainWindowViewModel : ViewModelBase
         }
     }
 
+    public IReadOnlyList<ConsoleTheme> ConsoleThemes => ConsoleThemePresets;
+
+    public ConsoleTheme? SelectedConsoleTheme
+    {
+        get => _selectedConsoleTheme;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _selectedConsoleTheme, value);
+            if (value != null)
+            {
+                _consoleBackgroundHex = value.Hex;
+                _store?.SetConsoleBackground(value.Hex);
+                this.RaisePropertyChanged(nameof(ConsoleBackground));
+            }
+        }
+    }
+
+    public IBrush ConsoleBackground => new SolidColorBrush(Color.Parse(_consoleBackgroundHex));
+
     public ICommand? AddProfile { get; set; }
     public ICommand? EditProfile { get; set; }
     public ICommand? ListMigrations { get; set; }
     public ICommand? AddMigration { get; set; }
     public ICommand? RemoveLastMigration { get; set; }
     public ICommand? GenerateScript { get; set; }
+    public ICommand? ClearConsole { get; set; }
 
     public void ApplyProfileSaved(Profile profile)
     {

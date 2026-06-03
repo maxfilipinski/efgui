@@ -1,44 +1,31 @@
-﻿using CliWrap;
-using CliWrap.Buffered;
-using System;
+using EfGui.Services;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace EfGui.Actions;
 
+// Interim plumbing: hardcoded target until the helper-project engine replaces it.
 public static class ActionsResolver
 {
     public static string exampleProjectPath = "E:\\Projects\\ExampleProject\\ExampleProject";
     public static string appContextName = "AppContext";
 
-    public static async Task RunDotnetEfTool(Logger logger, ActionOptions options)
+    public static async Task RunDotnetEfTool(ProcessRunner runner, IConsole console, ActionOptions options)
     {
-        try
-        {
-            logger.LogInfo($"Started operation: {options.ActionName}");
+        console.WriteLine(ConsoleMessageKind.Info, $"Started operation: {options.ActionName}");
 
-            logger.LogInfo("Running dotnet-ef command...");
-            await Cli.Wrap("dotnet-ef")
-                .WithArguments(args =>
-                {
-                    args.Add(options.DotnetEfArgs);
-                    args.Add(new[] { "--context", appContextName });
-                    args.Add(new[] { "--project", exampleProjectPath });
-                })
-                .WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
-                {
-                    logger.LogInfo(line);
-                }))
-                .ExecuteBufferedAsync();
-        }
-        catch (Exception ex)
+        var args = new List<string>(options.DotnetEfArgs)
         {
-            logger.LogInfo(ex.ToString());
-        }
+            "--context", appContextName,
+            "--project", exampleProjectPath
+        };
+
+        await runner.RunAsync("dotnet-ef", args);
     }
 }
 
 public class ActionOptions
 {
-    public string ActionName { get; set; }
-    public string[] DotnetEfArgs { get; set; }
+    public required string ActionName { get; init; }
+    public required string[] DotnetEfArgs { get; init; }
 }

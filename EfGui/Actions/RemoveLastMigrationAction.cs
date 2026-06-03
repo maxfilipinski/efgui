@@ -1,12 +1,13 @@
-﻿using System.Threading.Tasks;
+using EfGui.Services;
+using System.Threading.Tasks;
 
 namespace EfGui.Actions;
 
 public class RemoveLastMigrationAction
 {
-    public async Task ExecuteAsync(Logger logger)
+    public async Task ExecuteAsync(ProcessRunner runner, IConsole console)
     {
-        await ActionsResolver.RunDotnetEfTool(logger, new ActionOptions
+        await ActionsResolver.RunDotnetEfTool(runner, console, new ActionOptions
         {
             ActionName = "removing last migration",
             DotnetEfArgs = new[]
