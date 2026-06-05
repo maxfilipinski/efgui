@@ -17,17 +17,21 @@ public class ConsoleRenderer : IConsole
 
     private readonly ScrollViewer _scrollViewer;
     private readonly SelectableTextBlock _textBlock;
+    private readonly Control _emptyHint;
 
-    public ConsoleRenderer(ScrollViewer scrollViewer, SelectableTextBlock textBlock)
+    public ConsoleRenderer(ScrollViewer scrollViewer, SelectableTextBlock textBlock, Control emptyHint)
     {
         _scrollViewer = scrollViewer;
         _textBlock = textBlock;
+        _emptyHint = emptyHint;
     }
 
     public void WriteLine(ConsoleMessageKind kind, string text)
     {
         Dispatcher.UIThread.InvokeAsync(() =>
         {
+            _emptyHint.IsVisible = false;
+
             var run = new Run(text + "\n") { Foreground = BrushFor(kind) };
             if (kind == ConsoleMessageKind.Command)
                 run.FontWeight = FontWeight.Bold;
@@ -39,7 +43,11 @@ public class ConsoleRenderer : IConsole
 
     public void Clear()
     {
-        Dispatcher.UIThread.InvokeAsync(() => _textBlock.Inlines!.Clear());
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            _textBlock.Inlines!.Clear();
+            _emptyHint.IsVisible = true;
+        });
     }
 
     private static IBrush BrushFor(ConsoleMessageKind kind) => kind switch

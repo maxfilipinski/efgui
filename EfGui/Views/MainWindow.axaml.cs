@@ -49,4 +49,14 @@ public partial class MainWindow : Window
         if (DataContext is MainWindowViewModel vm)
             vm.SidebarWidth = MainWindowViewModel.DefaultSidebarWidth;
     }
+
+    private void ConsoleThemePreset_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: ConsoleTheme theme }
+            && DataContext is MainWindowViewModel vm)
+        {
+            vm.SelectedConsoleTheme = theme;
+            ConsoleThemeButton.Flyout?.Hide();
+        }
+    }
 }
