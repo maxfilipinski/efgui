@@ -28,15 +28,32 @@
         <Setter Property="TextWrapping" Value="Wrap"/>
         <Setter Property="TextAlignment" Value="Center"/>
       </Style>
-      <Style Selector="StackPanel.sidebar > TextBlock.section">
+      <Style Selector="TextBlock.section">
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="LetterSpacing" Value="0.4"/>
         <Setter Property="Opacity" Value="0.8"/>
-        <Setter Property="Margin" Value="0 10 0 2"/>
+      </Style>
+      <Style Selector="StackPanel.sidebar > TextBlock.section">
+        <Setter Property="Margin" Value="0 16 0 4"/>
+      </Style>
+      <Style Selector="Button.destructive">
+        <Setter Property="Foreground" Value="#D2685E"/>
       </Style>
       <Style Selector="GridSplitter#SidebarSplitter:pointerover">
         <Setter Property="Background" Value="#40808080"/>
+      </Style>
+      <!-- Always occupies its row; fades in instead of shifting the layout. -->
+      <Style Selector="ProgressBar#BusyBar">
+        <Setter Property="Opacity" Value="0"/>
+        <Setter Property="Transitions">
+          <Transitions>
+            <DoubleTransition Property="Opacity" Duration="0:0:0.15"/>
+          </Transitions>
+        </Setter>
+      </Style>
+      <Style Selector="ProgressBar#BusyBar.active">
+        <Setter Property="Opacity" Value="1"/>
       </Style>
     </Window.Styles>
 
@@ -49,69 +66,139 @@
         <ColumnDefinition Width="*" MinWidth="320"/>
       </Grid.ColumnDefinitions>
 
-      <StackPanel Grid.Row="0" Grid.Column="2" Margin="0 12 12 12" Orientation="Horizontal" Spacing="6">
+      <!-- Top bar: profile cluster only. -->
+      <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+                  Margin="16 16 16 20" Orientation="Horizontal" Spacing="8">
         <TextBlock Text="Profile:" VerticalAlignment="Center"/>
-        <ComboBox MinWidth="240" VerticalAlignment="Center"
+        <ComboBox MinWidth="260" VerticalAlignment="Center"
                   ItemsSource="{Binding Profiles}"
                   SelectedItem="{Binding SelectedProfile}"
-                  DisplayMemberBinding="{Binding Name}"/>
-        <Button Content="Edit" VerticalAlignment="Stretch" Command="{Binding EditProfile}"/>
-        <Button Content="Add" VerticalAlignment="Stretch" Command="{Binding AddProfile}"/>
-        <Button Content="Clear console" VerticalAlignment="Stretch" Command="{Binding ClearConsole}"/>
-        <ComboBox VerticalAlignment="Center" MinWidth="110"
-                  ItemsSource="{Binding ConsoleThemes}"
-                  SelectedItem="{Binding SelectedConsoleTheme}"
-                  DisplayMemberBinding="{Binding Name}"/>
-        <Button Content="Stop" VerticalAlignment="Stretch"
-                Background="#A93434" Foreground="White"
-                IsVisible="{Binding IsBusy}"
-                Command="{Binding CancelOperation}"/>
+                  DisplayMemberBinding="{Binding Name}"
+                  PlaceholderText="Add a profile to get started"/>
+        <Button VerticalAlignment="Stretch" Command="{Binding EditProfile}"
+                ToolTip.Tip="Edit the selected profile"
+                AutomationProperties.Name="Edit profile">
+          <PathIcon Width="14" Height="14"
+                    Data="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+        </Button>
+        <Button VerticalAlignment="Stretch" Command="{Binding AddProfile}"
+                ToolTip.Tip="Add a new profile"
+                AutomationProperties.Name="Add profile">
+          <PathIcon Width="14" Height="14"
+                    Data="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+        </Button>
       </StackPanel>
 
-      <StackPanel Classes="sidebar" Grid.Row="1" Grid.Column="0" Margin="12 0 0 12">
-        <TextBlock Classes="section" Text="Create migration" Margin="0 0 0 2"/>
-        <Grid ColumnDefinitions="*, Auto">
+      <StackPanel Classes="sidebar" Grid.Row="1" Grid.Column="0" Margin="16 0 0 0">
+        <TextBlock Classes="section" Text="Create migration" Margin="0 0 0 4"/>
+        <Grid ColumnDefinitions="*, Auto" Margin="0 2">
           <TextBox Grid.Column="0" Text="{Binding MigrationName}"
                    PlaceholderText="MigrationName">
             <TextBox.KeyBindings>
               <KeyBinding Gesture="Enter" Command="{Binding CreateMigration}"/>
             </TextBox.KeyBindings>
           </TextBox>
-          <Button Grid.Column="1" Content="+" Margin="4 0 0 0"
+          <Button Grid.Column="1" Classes="accent" Margin="6 0 0 0"
                   VerticalAlignment="Stretch"
-                  Command="{Binding CreateMigration}"/>
+                  Command="{Binding CreateMigration}"
+                  ToolTip.Tip="Create migration — dotnet ef migrations add &lt;name&gt;"
+                  AutomationProperties.Name="Create migration">
+            <PathIcon Width="14" Height="14"
+                      Data="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+          </Button>
         </Grid>
 
         <TextBlock Classes="section" Text="General actions"/>
-        <Button Content="List migrations" Command="{Binding ListMigrations}"/>
-        <Button Content="Generate full migration script" Command="{Binding GenerateFullScript}"/>
-        <Button Content="Generate unapplied migration script" Command="{Binding GenerateUnappliedScript}"/>
-        <Button Content="Generate optimized model" Command="{Binding GenerateOptimizedModel}"/>
+        <Button Content="List migrations" Command="{Binding ListMigrations}"
+                ToolTip.Tip="dotnet ef migrations list"/>
+        <Button Content="Generate full migration script" Command="{Binding GenerateFullScript}"
+                ToolTip.Tip="dotnet ef migrations script"/>
+        <Button Content="Generate unapplied migration script" Command="{Binding GenerateUnappliedScript}"
+                ToolTip.Tip="dotnet ef migrations script &lt;last-applied&gt; — determined from the database"/>
+        <Button Content="Generate optimized model" Command="{Binding GenerateOptimizedModel}"
+                ToolTip.Tip="dotnet ef dbcontext optimize"/>
 
         <TextBlock Classes="section" Text="Last migration actions"/>
-        <Button Content="Remove from code" Command="{Binding RemoveLastFromCode}"/>
-        <Button Content="Recreate and generate script" Command="{Binding RecreateAndGenerateScript}"/>
-        <Button Content="Generate apply script" Command="{Binding GenerateApplyScript}"/>
-        <Button Content="Generate rollback script" Command="{Binding GenerateRollbackScript}"/>
+        <Button Classes="destructive" Content="Remove from code" Command="{Binding RemoveLastFromCode}"
+                ToolTip.Tip="dotnet ef migrations remove --force"/>
+        <Button Content="Recreate and generate script" Command="{Binding RecreateAndGenerateScript}"
+                ToolTip.Tip="migrations remove --force, then add with the same name, then script"/>
+        <Button Content="Generate apply script" Command="{Binding GenerateApplyScript}"
+                ToolTip.Tip="dotnet ef migrations script &lt;previous&gt; &lt;last&gt;"/>
+        <Button Content="Generate rollback script" Command="{Binding GenerateRollbackScript}"
+                ToolTip.Tip="dotnet ef migrations script &lt;last&gt; &lt;previous&gt;"/>
       </StackPanel>
 
       <GridSplitter x:Name="SidebarSplitter" Grid.Row="1" Grid.Column="1" Width="8"
                     Background="Transparent" ResizeDirection="Columns"
                     DoubleTapped="SidebarSplitter_DoubleTapped"/>
 
-      <Border Background="{Binding ConsoleBackground}" CornerRadius="4" Grid.Row="1" Grid.Column="2" VerticalAlignment="Stretch" Margin="0 0 12 12">
-        <ScrollViewer x:Name="ScrollViewer" HorizontalScrollBarVisibility="Auto" Padding="8">
-          <SelectableTextBlock x:Name="SelectableTextBlock"
-                               Foreground="#C7D5E8"
-                               FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
-                               FontSize="{Binding ConsoleFontSize}"
-                               LineHeight="{Binding ConsoleLineHeight}"/>
-        </ScrollViewer>
-      </Border>
+      <Grid Grid.Row="1" Grid.Column="2" Margin="0 0 16 0" RowDefinitions="Auto, *">
+        <DockPanel Grid.Row="0" Margin="0 0 0 6">
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+            <Button Content="Stop"
+                    Background="#A93434" Foreground="White"
+                    IsVisible="{Binding IsBusy}"
+                    Command="{Binding CancelOperation}"
+                    ToolTip.Tip="Cancel the running operation"/>
+            <Button VerticalAlignment="Stretch" Command="{Binding ClearConsole}"
+                    ToolTip.Tip="Clear console output"
+                    AutomationProperties.Name="Clear console">
+              <PathIcon Width="14" Height="14"
+                        Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9A7.902 7.902 0 0 1 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1A7.902 7.902 0 0 1 20 12c0 4.42-3.58 8-8 8z"/>
+            </Button>
+            <Button x:Name="ConsoleThemeButton" VerticalAlignment="Stretch" Padding="8 0"
+                    ToolTip.Tip="Console background">
+              <Border Width="16" Height="16" CornerRadius="3"
+                      Background="{Binding ConsoleBackground}"
+                      BorderBrush="#60808080" BorderThickness="1"/>
+              <Button.Flyout>
+                <Flyout Placement="BottomEdgeAlignedRight">
+                  <ItemsControl ItemsSource="{Binding ConsoleThemes}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:ConsoleTheme">
+                        <Button Background="Transparent" HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Left" Padding="8 6"
+                                Click="ConsoleThemePreset_Click">
+                          <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Border Width="16" Height="16" CornerRadius="3"
+                                    Background="{Binding Swatch}"
+                                    BorderBrush="#60808080" BorderThickness="1"/>
+                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                          </StackPanel>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+          </StackPanel>
+          <TextBlock Classes="section" Text="Output" VerticalAlignment="Center"/>
+        </DockPanel>
 
-      <ProgressBar Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
-                   Height="4" Margin="12 0 12 8"
+        <Border Grid.Row="1" Background="{Binding ConsoleBackground}" CornerRadius="4">
+          <Panel>
+            <ScrollViewer x:Name="ScrollViewer" HorizontalScrollBarVisibility="Auto" Padding="12">
+              <SelectableTextBlock x:Name="SelectableTextBlock"
+                                   Foreground="#C7D5E8"
+                                   FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                                   FontSize="{Binding ConsoleFontSize}"
+                                   LineHeight="{Binding ConsoleLineHeight}"/>
+            </ScrollViewer>
+            <TextBlock x:Name="ConsoleHint"
+                       Text="Run an action to see its output here&#x0a;Ctrl+scroll to zoom"
+                       Foreground="#6E7E92" TextAlignment="Center"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Panel>
+        </Border>
+      </Grid>
+
+      <!-- Lives inside the 16px bottom gutter (4+4+8) so the gap below the console
+           matches the right-hand gutter and nothing shifts when it fades in. -->
+      <ProgressBar x:Name="BusyBar" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+                   Height="4" Margin="16 4 16 8"
                    IsIndeterminate="{Binding IsBusy}"
-                   IsVisible="{Binding IsBusy}"/>
+                   Classes.active="{Binding IsBusy}"/>
     </Grid>
 </Window>

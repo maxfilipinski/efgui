@@ -9,7 +9,10 @@ using System.Windows.Input;
 
 namespace EfGui.ViewModels;
 
-public record ConsoleTheme(string Name, string Hex);
+public record ConsoleTheme(string Name, string Hex)
+{
+    public IBrush Swatch => new SolidColorBrush(Color.Parse(Hex));
+}
 
 public class MainWindowViewModel : ViewModelBase
 {
