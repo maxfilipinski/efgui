@@ -91,6 +91,20 @@ public class ProfileStore
         Save();
     }
 
+    public (double X, double Y, double Width, double Height)? WindowBounds =>
+        _data is { WindowX: { } x, WindowY: { } y, WindowWidth: { } w, WindowHeight: { } h }
+            ? (x, y, w, h)
+            : null;
+
+    public void SetWindowBounds(double x, double y, double width, double height)
+    {
+        _data.WindowX = x;
+        _data.WindowY = y;
+        _data.WindowWidth = width;
+        _data.WindowHeight = height;
+        Save();
+    }
+
     public double SidebarWidth => _data.SidebarWidth;
 
     public void SetSidebarWidth(double width)
@@ -133,5 +147,9 @@ public class ProfileStore
         public string ConsoleBackground { get; set; } = "#0C0C0C";
         public double ConsoleFontSize { get; set; } = 13;
         public double SidebarWidth { get; set; } = 240;
+        public double? WindowX { get; set; }
+        public double? WindowY { get; set; }
+        public double? WindowWidth { get; set; }
+        public double? WindowHeight { get; set; }
     }
 }
