@@ -54,10 +54,20 @@ public class MainWindowViewModel : ViewModelBase
         set
         {
             this.RaiseAndSetIfChanged(ref _selectedProfile, value);
+            this.RaisePropertyChanged(nameof(WindowTitle));
+            this.RaisePropertyChanged(nameof(ConsoleHintText));
             if (value != null)
                 _store?.SetLastSelected(value.Id);
         }
     }
+
+    public string WindowTitle =>
+        _selectedProfile is null ? "EfGui" : $"{_selectedProfile.Name} — EfGui";
+
+    public string ConsoleHintText =>
+        _selectedProfile is null
+            ? "Add a profile to get started"
+            : "Run an action to see its output here\nCtrl+scroll to zoom";
 
     public IReadOnlyList<ConsoleTheme> ConsoleThemes => ConsoleThemePresets;
 
@@ -97,6 +107,12 @@ public class MainWindowViewModel : ViewModelBase
         get => _store?.SidebarWidth ?? DefaultSidebarWidth;
         set => _store?.SetSidebarWidth(value);
     }
+
+    public (double X, double Y, double Width, double Height)? GetWindowBounds() =>
+        _store?.WindowBounds;
+
+    public void SaveWindowBounds(double x, double y, double width, double height) =>
+        _store?.SetWindowBounds(x, y, width, height);
 
     public double ConsoleFontSize
     {

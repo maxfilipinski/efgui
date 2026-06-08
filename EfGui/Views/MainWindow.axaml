@@ -9,7 +9,7 @@
         Icon="/Assets/avalonia-logo.ico"
         Width="900" Height="560"
         MinWidth="700" MinHeight="400"
-        Title="EfGui">
+        Title="{Binding WindowTitle}">
 
     <Design.DataContext>
       <!-- This only sets the DataContext for the previewer in an IDE,
@@ -17,7 +17,34 @@
       <vm:MainWindowViewModel/>
     </Design.DataContext>
 
+    <Window.Resources>
+      <!-- Fixed .NET-purple accent: system accent colors can be near-gray, which
+           would defeat the purpose of emphasizing the primary action. -->
+      <SolidColorBrush x:Key="AccentBrush" Color="#512BD4"/>
+      <SolidColorBrush x:Key="AccentBrushPointerOver" Color="#6A48DB"/>
+      <SolidColorBrush x:Key="AccentBrushPressed" Color="#3F22A3"/>
+    </Window.Resources>
+
     <Window.Styles>
+      <!-- Stock FluentTheme ships no Button.accent class styling; define it explicitly.
+           Styled on the template presenter directly, which outranks the TemplateBinding. -->
+      <Style Selector="Button.accent /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+        <Setter Property="Foreground" Value="White"/>
+      </Style>
+      <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AccentBrushPointerOver}"/>
+        <Setter Property="Foreground" Value="White"/>
+      </Style>
+      <Style Selector="Button.accent:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AccentBrushPressed}"/>
+        <Setter Property="Foreground" Value="White"/>
+      </Style>
+      <!-- The presenter styles above outrank the theme's :disabled state, so dim explicitly. -->
+      <Style Selector="Button.accent:disabled">
+        <Setter Property="Opacity" Value="0.45"/>
+      </Style>
+
       <Style Selector="StackPanel.sidebar > Button">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
@@ -68,7 +95,8 @@
 
       <!-- Top bar: profile cluster only. -->
       <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
-                  Margin="16 16 16 20" Orientation="Horizontal" Spacing="8">
+                  Margin="16 16 16 28" Orientation="Horizontal" Spacing="8"
+                  HorizontalAlignment="Center">
         <TextBlock Text="Profile:" VerticalAlignment="Center"/>
         <ComboBox MinWidth="260" VerticalAlignment="Center"
                   ItemsSource="{Binding Profiles}"
@@ -187,7 +215,7 @@
                                    LineHeight="{Binding ConsoleLineHeight}"/>
             </ScrollViewer>
             <TextBlock x:Name="ConsoleHint"
-                       Text="Run an action to see its output here&#x0a;Ctrl+scroll to zoom"
+                       Text="{Binding ConsoleHintText}"
                        Foreground="#6E7E92" TextAlignment="Center"
                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
           </Panel>

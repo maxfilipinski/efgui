@@ -38,7 +38,7 @@ public partial class App : Application
         var mainWindow = new MainWindow();
         var profileStore = new ProfileStore();
         var mainWindowViewModel = new MainWindowViewModel(profileStore);
-        var console = new ConsoleRenderer(mainWindow.ScrollViewer, mainWindow.SelectableTextBlock, mainWindow.ConsoleHint);
+        var console = mainWindow.CreateConsoleRenderer();
         var runner = new ProcessRunner(console);
         var engine = new EfCoreEngine(runner, console, new DotnetEfTool(runner, console));
         var notBusy = mainWindowViewModel.WhenAnyValue(vm => vm.IsBusy).Select(b => !b);
