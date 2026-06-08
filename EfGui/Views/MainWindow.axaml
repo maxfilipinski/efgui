@@ -137,6 +137,8 @@
         </Grid>
 
         <TextBlock Classes="section" Text="General actions"/>
+        <Button Content="Verify profile" Command="{Binding Verify}"
+                ToolTip.Tip="Build the project and load the DbContext — dotnet ef dbcontext info"/>
         <Button Content="List migrations" Command="{Binding ListMigrations}"
                 ToolTip.Tip="dotnet ef migrations list"/>
         <Button Content="Generate full migration script" Command="{Binding GenerateFullScript}"

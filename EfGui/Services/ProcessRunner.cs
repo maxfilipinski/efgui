@@ -28,6 +28,7 @@ public class ProcessRunner
         IReadOnlyList<string> arguments,
         string? workingDirectory = null,
         IReadOnlyDictionary<string, string?>? environment = null,
+        bool echoStdOut = true,
         CancellationToken cancellationToken = default)
     {
         _console.WriteLine(ConsoleMessageKind.Command, $"> {executable} {string.Join(' ', arguments)}");
@@ -40,7 +41,8 @@ public class ProcessRunner
             .WithStandardOutputPipe(PipeTarget.ToDelegate(line =>
             {
                 stdOutLines.Add(line);
-                _console.WriteLine(ConsoleMessageKind.StdOut, line);
+                if (echoStdOut)
+                    _console.WriteLine(ConsoleMessageKind.StdOut, line);
             }))
             .WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
                 _console.WriteLine(ConsoleMessageKind.StdErr, line)));

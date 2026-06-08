@@ -13,17 +13,20 @@ public static class HelperProjectGenerator
     public static string Generate(Profile profile)
     {
         // Stable per profile so the helper's obj/bin stay warm between runs.
-        var dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "EfGui", "helpers", profile.Id.ToString("N"));
+        var dir = AppPaths.HelperDir(profile.Id);
         Directory.CreateDirectory(dir);
 
+        var (csproj, factory) = BuildSources(profile);
         var csprojPath = Path.Combine(dir, "EfGuiHelper.csproj");
-        File.WriteAllText(csprojPath, BuildCsproj(profile));
-        File.WriteAllText(Path.Combine(dir, "DesignTimeFactory.cs"), BuildFactory(profile));
+        File.WriteAllText(csprojPath, csproj);
+        File.WriteAllText(Path.Combine(dir, "DesignTimeFactory.cs"), factory);
 
         return csprojPath;
     }
+
+    // Pure source generation, separated from disk I/O for testing.
+    public static (string Csproj, string Factory) BuildSources(Profile profile) =>
+        (BuildCsproj(profile), BuildFactory(profile));
 
     private static string BuildCsproj(Profile profile)
     {

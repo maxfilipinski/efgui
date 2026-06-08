@@ -15,6 +15,11 @@ public class ConsoleRenderer : IConsole
     private static readonly IBrush SuccessBrush = new SolidColorBrush(Color.Parse("#9CE29C"));
     private static readonly IBrush ErrorBrush = new SolidColorBrush(Color.Parse("#FF8080"));
 
+    // Bound the number of lines kept so long sessions don't grow memory or slow
+    // rendering. Trim in batches to avoid per-line removal churn.
+    private const int MaxLines = 5000;
+    private const int TrimBatch = 500;
+
     private readonly ScrollViewer _scrollViewer;
     private readonly SelectableTextBlock _textBlock;
     private readonly Control _emptyHint;
@@ -36,7 +41,14 @@ public class ConsoleRenderer : IConsole
             if (kind == ConsoleMessageKind.Command)
                 run.FontWeight = FontWeight.Bold;
 
-            _textBlock.Inlines!.Add(run);
+            var inlines = _textBlock.Inlines!;
+            if (inlines.Count >= MaxLines + TrimBatch)
+            {
+                for (var i = 0; i < TrimBatch; i++)
+                    inlines.RemoveAt(0);
+            }
+
+            inlines.Add(run);
             _scrollViewer.ScrollToEnd();
         });
     }

@@ -19,10 +19,7 @@ public class ProfileStore
     private StoreData _data = new();
 
     public ProfileStore()
-        : this(Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "EfGui",
-            "profiles.json"))
+        : this(AppPaths.ProfilesFile)
     {
     }
 
@@ -125,6 +122,9 @@ public class ProfileStore
         {
             var json = File.ReadAllText(_filePath);
             _data = JsonSerializer.Deserialize<StoreData>(json, JsonOptions) ?? new StoreData();
+
+            foreach (var profile in _data.Profiles)
+                profile.ConnectionString = Secret.Unprotect(profile.ConnectionString);
         }
         catch (JsonException)
         {
@@ -137,7 +137,22 @@ public class ProfileStore
     private void Save()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
-        File.WriteAllText(_filePath, JsonSerializer.Serialize(_data, JsonOptions));
+
+        // Encrypt sensitive fields only for serialization, then restore the in-memory
+        // plaintext so callers keep seeing usable values. Synchronous, so no race.
+        var plaintext = _data.Profiles.Select(p => p.ConnectionString).ToList();
+        try
+        {
+            foreach (var profile in _data.Profiles)
+                profile.ConnectionString = Secret.Protect(profile.ConnectionString);
+
+            File.WriteAllText(_filePath, JsonSerializer.Serialize(_data, JsonOptions));
+        }
+        finally
+        {
+            for (var i = 0; i < _data.Profiles.Count; i++)
+                _data.Profiles[i].ConnectionString = plaintext[i];
+        }
     }
 
     private class StoreData

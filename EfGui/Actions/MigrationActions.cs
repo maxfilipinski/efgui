@@ -5,19 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace EfGui.Actions;
 
-public partial class MigrationActions
+public class MigrationActions
 {
-    // Matches "20260603123015_AddColumns" optionally suffixed with " (Pending)".
-    [GeneratedRegex(@"^(?<id>\d{14}_\S+?)(?<pending> \(Pending\))?$")]
-    private static partial Regex MigrationLineRegex();
-
     private readonly EfCoreEngine _engine;
     private readonly IConsole _console;
 
@@ -41,6 +35,15 @@ public partial class MigrationActions
         await _engine.RunAsync(profile, new[] { "migrations", "list" }, cancellationToken);
     }
 
+    public async Task VerifyAsync(Profile profile, CancellationToken cancellationToken = default)
+    {
+        // dbcontext info loads the context through the design-time factory and prints
+        // provider/connection details without touching migrations or the database schema.
+        var result = await _engine.RunAsync(profile, new[] { "dbcontext", "info" }, cancellationToken);
+        if (result?.Succeeded == true)
+            _console.WriteLine(ConsoleMessageKind.Success, "Profile verified: project builds and the DbContext loads.");
+    }
+
     public async Task GenerateFullScriptAsync(Profile profile, CancellationToken cancellationToken = default)
     {
         await GenerateScriptAsync(profile, from: null, to: null, "full", cancellationToken);
@@ -58,14 +61,15 @@ public partial class MigrationActions
             return;
         }
 
-        if (migrations.All(m => !m.Pending))
+        if (!MigrationScriptRange.AnyUnapplied(migrations))
         {
             _console.WriteLine(ConsoleMessageKind.Info, "No unapplied migrations.");
             return;
         }
 
-        var lastApplied = migrations.LastOrDefault(m => !m.Pending)?.Id ?? "0";
-        await GenerateScriptAsync(profile, lastApplied, migrations[^1].Id, "unapplied", cancellationToken);
+        await GenerateScriptAsync(
+            profile, MigrationScriptRange.LastAppliedId(migrations), MigrationScriptRange.LastId(migrations),
+            "unapplied", cancellationToken);
     }
 
     public async Task GenerateOptimizedModelAsync(Profile profile, CancellationToken cancellationToken = default)
@@ -88,9 +92,8 @@ public partial class MigrationActions
             return;
         }
 
-        var last = migrations[^1].Id;
-        var previous = migrations.Count >= 2 ? migrations[^2].Id : "0";
-        var name = last.Split('_', 2)[1];
+        var previous = MigrationScriptRange.PreviousId(migrations);
+        var name = migrations[^1].Name;
 
         _console.WriteLine(ConsoleMessageKind.Info, $"Recreating migration '{name}'...");
 
@@ -118,8 +121,9 @@ public partial class MigrationActions
             return;
         }
 
-        var previous = migrations.Count >= 2 ? migrations[^2].Id : "0";
-        await GenerateScriptAsync(profile, previous, migrations[^1].Id, "apply", cancellationToken);
+        await GenerateScriptAsync(
+            profile, MigrationScriptRange.PreviousId(migrations), MigrationScriptRange.LastId(migrations),
+            "apply", cancellationToken);
     }
 
     public async Task GenerateRollbackScriptAsync(Profile profile, CancellationToken cancellationToken = default)
@@ -131,41 +135,36 @@ public partial class MigrationActions
             return;
         }
 
-        var previous = migrations.Count >= 2 ? migrations[^2].Id : "0";
-        await GenerateScriptAsync(profile, migrations[^1].Id, previous, "rollback", cancellationToken);
+        await GenerateScriptAsync(
+            profile, MigrationScriptRange.LastId(migrations), MigrationScriptRange.PreviousId(migrations),
+            "rollback", cancellationToken);
     }
 
-    private record MigrationEntry(string Id, bool Pending);
-
-    private async Task<List<MigrationEntry>?> GetMigrationsAsync(Profile profile, bool connect, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<MigrationInfo>?> GetMigrationsAsync(
+        Profile profile, bool connect, CancellationToken cancellationToken)
     {
-        var args = new List<string> { "migrations", "list" };
+        var args = new List<string> { "migrations", "list", "--json", "--prefix-output" };
         if (!connect)
             args.Add("--no-connect");
 
-        var result = await _engine.RunAsync(profile, args, cancellationToken);
+        // Quiet: the JSON payload is for parsing, not for the user to read.
+        var result = await _engine.RunAsync(profile, args, cancellationToken, echoOutput: false);
         if (result is not { Succeeded: true })
             return null;
 
-        if (connect && result.StdOutLines.Any(l => l.Contains("Pending status not shown")))
-        {
-            _console.WriteLine(ConsoleMessageKind.Error,
-                "Could not reach the database to determine applied migrations.");
-            return null;
-        }
+        var parsed = MigrationListParser.Parse(result.StdOutLines);
+        if (parsed is null)
+            _console.WriteLine(ConsoleMessageKind.Error, "Could not parse the migration list.");
 
-        return result.StdOutLines
-            .Select(l => MigrationLineRegex().Match(l.Trim()))
-            .Where(m => m.Success)
-            .Select(m => new MigrationEntry(m.Groups["id"].Value, m.Groups["pending"].Success))
-            .ToList();
+        return parsed;
     }
 
     private async Task GenerateScriptAsync(Profile profile, string? from, string? to, string label, CancellationToken cancellationToken)
     {
+        Directory.CreateDirectory(AppPaths.ScriptsDir);
         var path = Path.Combine(
-            Path.GetTempPath(),
-            $"efgui-{label}-script-{DateTime.Now:yyyyMMdd'T'HHmmss}.sql");
+            AppPaths.ScriptsDir,
+            $"{profile.Id:N}-{label}-{DateTime.Now:yyyyMMdd'T'HHmmss}.sql");
 
         var args = new List<string> { "migrations", "script" };
         if (from != null)
@@ -179,8 +178,9 @@ public partial class MigrationActions
         if (result?.Succeeded != true)
             return;
 
-        _console.WriteLine(ConsoleMessageKind.Info, $"Script written to: {path}");
+        _console.WriteLine(ConsoleMessageKind.Success, $"Script written to: {path}");
         TryOpenFile(path);
+        _console.WriteLine(ConsoleMessageKind.Info, $"Folder: {AppPaths.ScriptsDir}");
     }
 
     private static void TryOpenFile(string path)
@@ -191,7 +191,7 @@ public partial class MigrationActions
         }
         catch
         {
-            // No associated application; the path was already printed to the console.
+            // No associated application; the path and folder are printed to the console.
         }
     }
 }
