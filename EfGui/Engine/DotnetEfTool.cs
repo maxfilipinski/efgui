@@ -20,9 +20,7 @@ public class DotnetEfTool
     // Returns the path to the pinned dotnet-ef executable, installing it on first use.
     public async Task<string?> EnsureInstalledAsync(string version, CancellationToken cancellationToken = default)
     {
-        var toolDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "EfGui", "tools", "dotnet-ef", version);
+        var toolDir = AppPaths.ToolDir(version);
         var exePath = Path.Combine(toolDir, OperatingSystem.IsWindows() ? "dotnet-ef.exe" : "dotnet-ef");
 
         if (File.Exists(exePath))

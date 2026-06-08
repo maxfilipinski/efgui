@@ -23,7 +23,8 @@ public class EfCoreEngine
     public async Task<ProcessResult?> RunAsync(
         Profile profile,
         IReadOnlyList<string> efArgs,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool echoOutput = true)
     {
         if (!File.Exists(profile.CsprojPath))
         {
@@ -64,6 +65,7 @@ public class EfCoreEngine
             efExePath,
             args,
             workingDirectory: Path.GetDirectoryName(profile.CsprojPath),
+            echoStdOut: echoOutput,
             cancellationToken: cancellationToken);
     }
 }
