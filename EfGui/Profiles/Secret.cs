@@ -28,25 +28,31 @@ public static class Secret
         }
     }
 
-    public static string Unprotect(string stored)
+    // False when the value is encrypted but cannot be decrypted here (another
+    // user/machine, or corrupted); the caller must keep the stored value intact.
+    public static bool TryUnprotect(string stored, out string plaintext)
     {
+        plaintext = stored;
         if (string.IsNullOrEmpty(stored) || !stored.StartsWith(Marker, StringComparison.Ordinal))
-            return stored;
+            return true;
 
         if (!OperatingSystem.IsWindows())
-            return stored;
+        {
+            plaintext = "";
+            return false;
+        }
 
         try
         {
             var bytes = Convert.FromBase64String(stored[Marker.Length..]);
-            var plaintext = ProtectedData.Unprotect(bytes, optionalEntropy: null, DataProtectionScope.CurrentUser);
-            return Encoding.UTF8.GetString(plaintext);
+            plaintext = Encoding.UTF8.GetString(
+                ProtectedData.Unprotect(bytes, optionalEntropy: null, DataProtectionScope.CurrentUser));
+            return true;
         }
         catch (Exception ex) when (ex is CryptographicException or FormatException)
         {
-            // Encrypted by another user/machine, or corrupted: surface the marker
-            // rather than silently treating ciphertext as a connection string.
-            return "";
+            plaintext = "";
+            return false;
         }
     }
 }

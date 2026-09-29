@@ -9,7 +9,51 @@
       <local:ViewLocator/>
     </Application.DataTemplates>
 
+    <Application.Resources>
+      <!-- Fixed .NET-purple accent: system accent colors can be near-gray, which
+           would defeat the purpose of emphasizing the primary action. -->
+      <SolidColorBrush x:Key="AccentBrush" Color="#512BD4"/>
+      <SolidColorBrush x:Key="AccentBrushPointerOver" Color="#6A48DB"/>
+      <SolidColorBrush x:Key="AccentBrushPressed" Color="#3F22A3"/>
+      <SolidColorBrush x:Key="DangerBrush" Color="#A93434"/>
+      <SolidColorBrush x:Key="DangerBrushPointerOver" Color="#BA4545"/>
+      <SolidColorBrush x:Key="DangerBrushPressed" Color="#8A2A2A"/>
+    </Application.Resources>
+
     <Application.Styles>
       <FluentTheme />
-    </Application.Styles> 
+
+      <!-- Stock FluentTheme ships no Button.accent class styling; define it explicitly.
+           Styled on the template presenter directly, which outranks the TemplateBinding. -->
+      <Style Selector="Button.accent /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+        <Setter Property="Foreground" Value="White"/>
+      </Style>
+      <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AccentBrushPointerOver}"/>
+        <Setter Property="Foreground" Value="White"/>
+      </Style>
+      <Style Selector="Button.accent:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AccentBrushPressed}"/>
+        <Setter Property="Foreground" Value="White"/>
+      </Style>
+
+      <Style Selector="Button.danger /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DangerBrush}"/>
+        <Setter Property="Foreground" Value="White"/>
+      </Style>
+      <Style Selector="Button.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DangerBrushPointerOver}"/>
+        <Setter Property="Foreground" Value="White"/>
+      </Style>
+      <Style Selector="Button.danger:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource DangerBrushPressed}"/>
+        <Setter Property="Foreground" Value="White"/>
+      </Style>
+
+      <!-- The presenter styles above outrank the theme's :disabled state, so dim explicitly. -->
+      <Style Selector="Button.accent:disabled, Button.danger:disabled">
+        <Setter Property="Opacity" Value="0.45"/>
+      </Style>
+    </Application.Styles>
 </Application>

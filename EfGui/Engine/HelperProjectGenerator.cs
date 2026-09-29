@@ -1,6 +1,7 @@
 using EfGui.Profiles;
 using System;
 using System.IO;
+using System.Security;
 using System.Text;
 
 namespace EfGui.Engine;
@@ -18,8 +19,8 @@ public static class HelperProjectGenerator
 
         var (csproj, factory) = BuildSources(profile);
         var csprojPath = Path.Combine(dir, "EfGuiHelper.csproj");
-        File.WriteAllText(csprojPath, csproj);
-        File.WriteAllText(Path.Combine(dir, "DesignTimeFactory.cs"), factory);
+        WriteIfChanged(csprojPath, csproj);
+        WriteIfChanged(Path.Combine(dir, "DesignTimeFactory.cs"), factory);
 
         return csprojPath;
     }
@@ -38,7 +39,7 @@ public static class HelperProjectGenerator
                 ? profile.ProviderPackageVersion
                 : provider.IndependentDefaultVersion ?? profile.EfCoreDesignVersion;
             providerReference =
-                $"""    <PackageReference Include="{provider.PackageId}" Version="{version}" />""" + "\n";
+                $"""    <PackageReference Include="{Xml(provider.PackageId)}" Version="{Xml(version)}" />""" + "\n";
         }
         // In CustomCode mode the provider package is expected to flow transitively
         // from the referenced project.
@@ -46,17 +47,17 @@ public static class HelperProjectGenerator
         return $"""
             <Project Sdk="Microsoft.NET.Sdk">
               <PropertyGroup>
-                <TargetFramework>{profile.TargetFramework}</TargetFramework>
+                <TargetFramework>{Xml(profile.TargetFramework)}</TargetFramework>
                 <OutputType>Library</OutputType>
                 <Nullable>disable</Nullable>
                 <ImplicitUsings>disable</ImplicitUsings>
                 <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
               </PropertyGroup>
               <ItemGroup>
-                <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="{profile.EfCoreDesignVersion}" />
+                <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="{Xml(profile.EfCoreDesignVersion)}" />
             {providerReference}  </ItemGroup>
               <ItemGroup>
-                <ProjectReference Include="{profile.CsprojPath}" />
+                <ProjectReference Include="{Xml(profile.CsprojPath)}" />
               </ItemGroup>
             </Project>
             """;
@@ -89,6 +90,16 @@ public static class HelperProjectGenerator
             }
             """;
     }
+
+    // Rewriting identical content would bump timestamps and force a rebuild of the helper.
+    private static void WriteIfChanged(string path, string content)
+    {
+        if (File.Exists(path) && File.ReadAllText(path) == content)
+            return;
+        File.WriteAllText(path, content);
+    }
+
+    private static string Xml(string value) => SecurityElement.Escape(value);
 
     private static string ToVerbatimLiteral(string value) =>
         "@\"" + value.Replace("\"", "\"\"") + "\"";

@@ -105,7 +105,8 @@ public class MainWindowViewModel : ViewModelBase
         }
     }
 
-    public IBrush ConsoleBackground => new SolidColorBrush(Color.Parse(_consoleBackgroundHex));
+    public IBrush ConsoleBackground => new SolidColorBrush(
+        Color.TryParse(_consoleBackgroundHex, out var color) ? color : Color.Parse(ConsoleThemePresets[0].Hex));
 
     public string MigrationName
     {

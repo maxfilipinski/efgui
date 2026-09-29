@@ -18,6 +18,10 @@ public class ProfileStore
     private readonly string _filePath;
     private StoreData _data = new();
 
+    // Ciphertext that could not be decrypted on this machine, by profile id. Written back
+    // verbatim on save so it is not lost, unless the user has entered a new value.
+    private readonly Dictionary<Guid, string> _unreadableSecrets = new();
+
     public ProfileStore()
         : this(AppPaths.ProfilesFile)
     {
@@ -124,7 +128,11 @@ public class ProfileStore
             _data = JsonSerializer.Deserialize<StoreData>(json, JsonOptions) ?? new StoreData();
 
             foreach (var profile in _data.Profiles)
-                profile.ConnectionString = Secret.Unprotect(profile.ConnectionString);
+            {
+                if (!Secret.TryUnprotect(profile.ConnectionString, out var plaintext))
+                    _unreadableSecrets[profile.Id] = profile.ConnectionString;
+                profile.ConnectionString = plaintext;
+            }
         }
         catch (JsonException)
         {
@@ -144,15 +152,30 @@ public class ProfileStore
         try
         {
             foreach (var profile in _data.Profiles)
-                profile.ConnectionString = Secret.Protect(profile.ConnectionString);
+                profile.ConnectionString = ProtectForSave(profile);
 
-            File.WriteAllText(_filePath, JsonSerializer.Serialize(_data, JsonOptions));
+            // Write-then-rename so a crash mid-write cannot corrupt the existing store.
+            var tempPath = _filePath + ".tmp";
+            File.WriteAllText(tempPath, JsonSerializer.Serialize(_data, JsonOptions));
+            File.Move(tempPath, _filePath, overwrite: true);
         }
         finally
         {
             for (var i = 0; i < _data.Profiles.Count; i++)
                 _data.Profiles[i].ConnectionString = plaintext[i];
         }
+    }
+
+    private string ProtectForSave(Profile profile)
+    {
+        if (_unreadableSecrets.TryGetValue(profile.Id, out var ciphertext))
+        {
+            if (profile.ConnectionString.Length == 0)
+                return ciphertext;
+            _unreadableSecrets.Remove(profile.Id);
+        }
+
+        return Secret.Protect(profile.ConnectionString);
     }
 
     private class StoreData

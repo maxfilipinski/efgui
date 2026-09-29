@@ -17,34 +17,7 @@
       <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <Window.Resources>
-      <!-- Fixed .NET-purple accent: system accent colors can be near-gray, which
-           would defeat the purpose of emphasizing the primary action. -->
-      <SolidColorBrush x:Key="AccentBrush" Color="#512BD4"/>
-      <SolidColorBrush x:Key="AccentBrushPointerOver" Color="#6A48DB"/>
-      <SolidColorBrush x:Key="AccentBrushPressed" Color="#3F22A3"/>
-    </Window.Resources>
-
     <Window.Styles>
-      <!-- Stock FluentTheme ships no Button.accent class styling; define it explicitly.
-           Styled on the template presenter directly, which outranks the TemplateBinding. -->
-      <Style Selector="Button.accent /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
-        <Setter Property="Foreground" Value="White"/>
-      </Style>
-      <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource AccentBrushPointerOver}"/>
-        <Setter Property="Foreground" Value="White"/>
-      </Style>
-      <Style Selector="Button.accent:pressed /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource AccentBrushPressed}"/>
-        <Setter Property="Foreground" Value="White"/>
-      </Style>
-      <!-- The presenter styles above outrank the theme's :disabled state, so dim explicitly. -->
-      <Style Selector="Button.accent:disabled">
-        <Setter Property="Opacity" Value="0.45"/>
-      </Style>
-
       <Style Selector="StackPanel.sidebar > Button">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
@@ -166,8 +139,7 @@
       <Grid Grid.Row="1" Grid.Column="2" Margin="0 0 16 0" RowDefinitions="Auto, *">
         <DockPanel Grid.Row="0" Margin="0 0 0 6">
           <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
-            <Button Content="Stop"
-                    Background="#A93434" Foreground="White"
+            <Button Content="Stop" Classes="danger"
                     IsVisible="{Binding IsBusy}"
                     Command="{Binding CancelOperation}"
                     ToolTip.Tip="Cancel the running operation"/>

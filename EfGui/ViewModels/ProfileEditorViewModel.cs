@@ -1,5 +1,7 @@
+using EfGui.Engine;
 using EfGui.Profiles;
 using ReactiveUI;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -173,7 +175,7 @@ public class ProfileEditorViewModel : ViewModelBase
         if (string.IsNullOrWhiteSpace(CsprojPath))
             return "Project path is required.";
 
-        if (!CsprojPath.Trim().EndsWith(".csproj"))
+        if (!CsprojPath.Trim().EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
             return "Project path must point to a .csproj file.";
 
         if (!File.Exists(CsprojPath.Trim()))
@@ -181,6 +183,9 @@ public class ProfileEditorViewModel : ViewModelBase
 
         if (string.IsNullOrWhiteSpace(DbContextName))
             return "DbContext class name is required.";
+
+        if (!CSharpIdentifier.IsValidQualified(DbContextName))
+            return "DbContext class name must be a valid C# type name, e.g. MyApp.Data.AppDbContext.";
 
         if (string.IsNullOrWhiteSpace(MigrationsDir))
             return "Migrations directory is required.";

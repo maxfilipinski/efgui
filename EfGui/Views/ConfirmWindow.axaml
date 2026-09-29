@@ -10,7 +10,7 @@
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
       <Button x:Name="CancelButton" Content="Cancel" Click="Cancel_Click"/>
       <Button x:Name="ConfirmButton" Content="Confirm" Click="Confirm_Click"
-              Background="#A93434" Foreground="White"/>
+              Classes="danger"/>
     </StackPanel>
   </StackPanel>
 </Window>

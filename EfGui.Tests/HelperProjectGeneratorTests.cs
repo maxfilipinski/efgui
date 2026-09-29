@@ -76,4 +76,16 @@ public class HelperProjectGeneratorTests
         Assert.DoesNotContain("Microsoft.EntityFrameworkCore.Sqlite", csproj);
         Assert.Contains("optionsBuilder.UseNpgsql(\"Host=localhost\");", factory);
     }
+
+    [Fact]
+    public void Csproj_escapes_xml_special_characters_in_paths()
+    {
+        var profile = BaseProfile();
+        profile.CsprojPath = @"C:\R&D\MyApp\MyApp.csproj";
+
+        var (csproj, _) = HelperProjectGenerator.BuildSources(profile);
+
+        Assert.Contains(@"C:\R&amp;D\MyApp\MyApp.csproj", csproj);
+        System.Xml.Linq.XDocument.Parse(csproj);
+    }
 }
