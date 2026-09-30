@@ -1,7 +1,7 @@
 using EfGui.Core.Engine;
 using EfGui.Core.Profiles;
 
-namespace EfGui.Tests;
+namespace EfGui.Core.Tests;
 
 public class HelperProjectGeneratorTests
 {

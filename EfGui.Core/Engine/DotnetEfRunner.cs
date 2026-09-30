@@ -3,15 +3,15 @@ using EfGui.Core.Services;
 
 namespace EfGui.Core.Engine;
 
-public class EfCoreEngine
+public class DotnetEfRunner
 {
-    private readonly ProcessRunner _runner;
+    private readonly ProcessRunner _processRunner;
     private readonly IConsole _console;
     private readonly DotnetEfTool _tool;
 
-    public EfCoreEngine(ProcessRunner runner, IConsole console, DotnetEfTool tool)
+    public DotnetEfRunner(ProcessRunner processRunner, IConsole console, DotnetEfTool tool)
     {
-        _runner = runner;
+        _processRunner = processRunner;
         _console = console;
         _tool = tool;
     }
@@ -19,8 +19,8 @@ public class EfCoreEngine
     public async Task<ProcessResult?> RunAsync(
         Profile profile,
         IReadOnlyList<string> efArgs,
-        CancellationToken cancellationToken = default,
-        bool echoOutput = true)
+        bool echoOutput = true,
+        CancellationToken cancellationToken = default)
     {
         if (!File.Exists(profile.CsprojPath))
         {
@@ -38,7 +38,7 @@ public class EfCoreEngine
 
         // dotnet-ef does not restore the startup project, so restore + build it
         // (and the target project, transitively) ourselves.
-        var build = await _runner.RunAsync(
+        var build = await _processRunner.RunAsync(
             "dotnet",
             new[] { "build", helperCsproj, "-v", "minimal" },
             cancellationToken: cancellationToken);
@@ -57,7 +57,7 @@ public class EfCoreEngine
             "--context", profile.DbContextName
         };
 
-        return await _runner.RunAsync(
+        return await _processRunner.RunAsync(
             efExePath,
             args,
             workingDirectory: Path.GetDirectoryName(profile.CsprojPath),

@@ -1,9 +1,10 @@
+using EfGui.Core.Profiles;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace EfGui.Core.Profiles;
+namespace EfGui.Core.Settings;
 
-public class ProfileStore
+public class SettingsStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -18,12 +19,12 @@ public class ProfileStore
     // verbatim on save so it is not lost, unless the user has entered a new value.
     private readonly Dictionary<Guid, string> _unreadableSecrets = new();
 
-    public ProfileStore()
-        : this(AppPaths.ProfilesFile)
+    public SettingsStore()
+        : this(AppPaths.SettingsFile)
     {
     }
 
-    public ProfileStore(string filePath)
+    public SettingsStore(string filePath)
     {
         _filePath = filePath;
         Load();

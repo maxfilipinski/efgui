@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using EfGui.Output;
 using EfGui.ViewModels;
 
 namespace EfGui.Views;

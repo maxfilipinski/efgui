@@ -1,13 +1,14 @@
 using EfGui.Core.Profiles;
+using EfGui.Core.Settings;
 
-namespace EfGui.Tests;
+namespace EfGui.Core.Tests;
 
-public sealed class ProfileStoreTests : IDisposable
+public sealed class SettingsStoreTests : IDisposable
 {
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "EfGuiTests", Guid.NewGuid().ToString("N"));
     private string FilePath => Path.Combine(_dir, "profiles.json");
 
-    public ProfileStoreTests() => Directory.CreateDirectory(_dir);
+    public SettingsStoreTests() => Directory.CreateDirectory(_dir);
 
     public void Dispose() => Directory.Delete(_dir, recursive: true);
 
@@ -24,7 +25,7 @@ public sealed class ProfileStoreTests : IDisposable
         var id = Guid.NewGuid();
         WriteStoreWithConnectionString(id, stored);
 
-        var store = new ProfileStore(FilePath);
+        var store = new SettingsStore(FilePath);
         Assert.Equal("", store.Profiles[0].ConnectionString);
 
         store.SetLastSelected(id);
@@ -37,20 +38,20 @@ public sealed class ProfileStoreTests : IDisposable
     {
         var id = Guid.NewGuid();
         WriteStoreWithConnectionString(id, "enc:AAAA");
-        var store = new ProfileStore(FilePath);
+        var store = new SettingsStore(FilePath);
 
         var profile = store.Profiles[0].Clone();
         profile.ConnectionString = "Data Source=new.db";
         store.Update(profile);
 
         Assert.DoesNotContain("enc:AAAA", File.ReadAllText(FilePath));
-        Assert.Equal("Data Source=new.db", new ProfileStore(FilePath).Profiles[0].ConnectionString);
+        Assert.Equal("Data Source=new.db", new SettingsStore(FilePath).Profiles[0].ConnectionString);
     }
 
     [Fact]
     public void Save_leaves_no_temp_file_behind()
     {
-        var store = new ProfileStore(FilePath);
+        var store = new SettingsStore(FilePath);
         store.Add(new Profile { Name = "P", ConnectionString = "Data Source=app.db" });
 
         Assert.True(File.Exists(FilePath));
@@ -64,9 +65,9 @@ public sealed class ProfileStoreTests : IDisposable
         WriteStoreWithConnectionString(id, "");
         var original = File.ReadAllText(FilePath);
 
-        ProfileStore store;
+        SettingsStore store;
         using (new FileStream(FilePath, FileMode.Open, FileAccess.Read, FileShare.None))
-            store = new ProfileStore(FilePath);
+            store = new SettingsStore(FilePath);
 
         Assert.NotNull(store.LoadError);
         store.Add(new Profile { Name = "New" });

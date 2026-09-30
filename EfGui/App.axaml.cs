@@ -1,10 +1,11 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using EfGui.Core.Actions;
 using EfGui.Core.Engine;
-using EfGui.Core.Profiles;
 using EfGui.Core.Services;
+using EfGui.Core.Settings;
 using EfGui.ViewModels;
 using EfGui.Views;
 
@@ -30,11 +31,11 @@ public partial class App : Application
     private MainWindow CreateMainWindow()
     {
         var mainWindow = new MainWindow();
-        var store = new ProfileStore();
+        var store = new SettingsStore();
         var console = mainWindow.CreateConsoleRenderer();
-        var runner = new ProcessRunner(console);
-        var engine = new EfCoreEngine(runner, console, new DotnetEfTool(runner, console));
-        var actions = new MigrationActions(engine, console);
+        var processRunner = new ProcessRunner(console);
+        var efRunner = new DotnetEfRunner(processRunner, console, new DotnetEfTool(processRunner, console));
+        var actions = new MigrationActions(efRunner, console);
 
         var viewModel = new MainWindowViewModel(store, actions, console)
         {
@@ -43,7 +44,8 @@ public partial class App : Application
                 var editor = new ProfileEditorWindow(new ProfileEditorViewModel(profile));
                 return editor.ShowDialog<ProfileEditorResult?>(mainWindow);
             },
-            ConfirmAsync = (title, message) => ConfirmWindow.ShowAsync(mainWindow, title, message)
+            ConfirmAsync = (title, message) => ConfirmWindow.ShowAsync(mainWindow, title, message),
+            OpenFile = path => mainWindow.Launcher.LaunchFileInfoAsync(new FileInfo(path))
         };
 
         mainWindow.DataContext = viewModel;

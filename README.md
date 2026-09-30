@@ -43,4 +43,4 @@ dotnet test
 | --- | --- |
 | `EfGui` | Avalonia app: views, view models, console rendering |
 | `EfGui.Core` | UI-independent logic: profiles, helper project generation, `dotnet-ef` invocation, output parsing |
-| `EfGui.Tests` | xUnit tests for `EfGui.Core` |
+| `EfGui.Core.Tests` | xUnit tests for `EfGui.Core` |

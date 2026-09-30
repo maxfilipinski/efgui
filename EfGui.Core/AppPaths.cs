@@ -10,7 +10,7 @@ public static class AppPaths
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "EfGui");
 
     // Roaming: small user settings worth following the user across machines.
-    public static string ProfilesFile => Path.Combine(RoamingRoot, "profiles.json");
+    public static string SettingsFile => Path.Combine(RoamingRoot, "profiles.json");
 
     // Local: machine-specific caches and generated artifacts.
     public static string ToolDir(string dotnetEfVersion) =>

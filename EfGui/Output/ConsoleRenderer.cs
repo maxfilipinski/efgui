@@ -4,7 +4,7 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using EfGui.Core.Services;
 
-namespace EfGui.Views;
+namespace EfGui.Output;
 
 public class ConsoleRenderer : IConsole
 {

@@ -1,6 +1,6 @@
 using EfGui.Core.Engine;
 
-namespace EfGui.Tests;
+namespace EfGui.Core.Tests;
 
 public class MigrationNameTests
 {

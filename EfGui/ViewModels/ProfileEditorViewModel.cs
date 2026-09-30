@@ -4,8 +4,6 @@ using ReactiveUI;
 
 namespace EfGui.ViewModels;
 
-public record ProfileEditorResult(Profile? Saved, bool Deleted);
-
 public class ProfileEditorViewModel : ViewModelBase
 {
     private readonly Profile _profile;

@@ -1,19 +1,5 @@
 namespace EfGui.Core.Profiles;
 
-public enum DbConfigMode
-{
-    ConnectionString,
-    CustomCode
-}
-
-public enum DbProvider
-{
-    SqlServer,
-    PostgreSql,
-    Sqlite,
-    MySql
-}
-
 public class Profile
 {
     public Guid Id { get; set; } = Guid.NewGuid();

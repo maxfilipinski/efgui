@@ -5,7 +5,7 @@ VisualStudioVersion = 17.7.34031.279
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EfGui", "EfGui\EfGui.csproj", "{7A8190A9-026B-42B0-8919-B623972B3A57}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfGui.Tests", "EfGui.Tests\EfGui.Tests.csproj", "{07E19103-DD9A-4007-B122-1F34BFAC95B5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfGui.Core.Tests", "EfGui.Core.Tests\EfGui.Core.Tests.csproj", "{07E19103-DD9A-4007-B122-1F34BFAC95B5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EfGui.Core", "EfGui.Core\EfGui.Core.csproj", "{FA2756B1-3252-4D5F-BC29-4A52E75DCD8A}"
 EndProject
