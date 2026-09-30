@@ -5,7 +5,7 @@ using EfGui.ViewModels;
 
 namespace EfGui.Views;
 
-public partial class ProfileEditorWindow : Window
+public sealed partial class ProfileEditorWindow : Window
 {
     private bool _deleteArmed;
 
@@ -33,7 +33,7 @@ public partial class ProfileEditorWindow : Window
             }
         });
 
-        var path = files.FirstOrDefault()?.TryGetLocalPath();
+        var path = files.Count > 0 ? files[0].TryGetLocalPath() : null;
         if (path != null)
             ViewModel.CsprojPath = path;
     }

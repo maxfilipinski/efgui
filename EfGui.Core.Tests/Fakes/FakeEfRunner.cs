@@ -33,7 +33,7 @@ public sealed class FakeEfRunner : IDotnetEfRunner
         return Task.FromResult<ProcessResult?>(result);
     }
 
-    private IReadOnlyList<string> ListOutput()
+    private string[] ListOutput()
     {
         var items = Migrations.Select(m =>
             $$"""{ "id": "{{m.Id}}", "name": "{{m.Name}}", "applied": {{(m.Applied ? "true" : "false")}} }""");

@@ -1,6 +1,8 @@
+using System.Globalization;
+
 namespace EfGui.Core.Profiles;
 
-public class DbProviderInfo
+public sealed class DbProviderInfo
 {
     public required DbProvider Provider { get; init; }
     public required string DisplayName { get; init; }
@@ -13,7 +15,7 @@ public class DbProviderInfo
     public required string ConfigureStatementFormat { get; init; }
 
     public string GetConfigureStatement(string connectionStringLiteral) =>
-        string.Format(ConfigureStatementFormat, connectionStringLiteral);
+        string.Format(CultureInfo.InvariantCulture, ConfigureStatementFormat, connectionStringLiteral);
 
     public static readonly IReadOnlyList<DbProviderInfo> All = new[]
     {

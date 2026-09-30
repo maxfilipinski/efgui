@@ -2,7 +2,7 @@ using EfGui.Core.Services;
 
 namespace EfGui.Core.Engine;
 
-public class DotnetEfTool
+public sealed class DotnetEfTool
 {
     private readonly ProcessRunner _runner;
     private readonly IConsole _console;

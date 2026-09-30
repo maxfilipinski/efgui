@@ -4,7 +4,7 @@ namespace EfGui.Core.Tests;
 
 public class MigrationScriptRangeTests
 {
-    private static IReadOnlyList<MigrationInfo> Migrations(params (string Id, bool Applied)[] items) =>
+    private static List<MigrationInfo> Migrations(params (string Id, bool Applied)[] items) =>
         items.Select(i => new MigrationInfo(i.Id, i.Id, i.Applied)).ToList();
 
     [Fact]

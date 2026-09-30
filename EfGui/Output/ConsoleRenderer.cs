@@ -6,7 +6,7 @@ using EfGui.Core.Services;
 
 namespace EfGui.Output;
 
-public class ConsoleRenderer : IConsole
+public sealed class ConsoleRenderer : IConsole
 {
     private static readonly IBrush CommandBrush = new SolidColorBrush(Color.Parse("#FFFFFF"));
     private static readonly IBrush StdOutBrush = new SolidColorBrush(Color.Parse("#C7D5E8"));

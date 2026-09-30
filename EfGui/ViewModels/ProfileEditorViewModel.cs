@@ -1,9 +1,10 @@
 using EfGui.Core.Profiles;
 using ReactiveUI;
+using System.Diagnostics.CodeAnalysis;
 
 namespace EfGui.ViewModels;
 
-public class ProfileEditorViewModel : ViewModelBase
+public sealed class ProfileEditorViewModel : ViewModelBase
 {
     private readonly Profile _profile;
 
@@ -49,6 +50,7 @@ public class ProfileEditorViewModel : ViewModelBase
 
     public string Title => IsNew ? "Add profile" : "Edit profile";
 
+    [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Bound from XAML, which needs an instance member.")]
     public IReadOnlyList<DbProviderInfo> Providers => DbProviderInfo.All;
 
     public string Name

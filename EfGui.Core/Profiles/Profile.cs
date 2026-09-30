@@ -1,6 +1,6 @@
 namespace EfGui.Core.Profiles;
 
-public class Profile
+public sealed class Profile
 {
     public Guid Id { get; set; } = Guid.NewGuid();
 

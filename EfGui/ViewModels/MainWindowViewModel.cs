@@ -6,12 +6,14 @@ using EfGui.Core.Services;
 using EfGui.Core.Settings;
 using ReactiveUI;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Reactive;
 using System.Reactive.Linq;
 using System.Windows.Input;
 
 namespace EfGui.ViewModels;
 
-public class MainWindowViewModel : ViewModelBase
+public sealed class MainWindowViewModel : ViewModelBase
 {
     public static readonly IReadOnlyList<ConsoleTheme> ConsoleThemePresets = new[]
     {
@@ -82,6 +84,7 @@ public class MainWindowViewModel : ViewModelBase
             ? "Add a profile to get started"
             : "Run an action to see its output here\nCtrl+scroll to zoom";
 
+    [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Bound from XAML, which needs an instance member.")]
     public IReadOnlyList<ConsoleTheme> ConsoleThemes => ConsoleThemePresets;
 
     public ConsoleTheme? SelectedConsoleTheme
@@ -232,7 +235,7 @@ public class MainWindowViewModel : ViewModelBase
         });
 
     // Serializes EF operations behind IsBusy, optionally confirms first, and surfaces failures.
-    private ICommand EfCommand(
+    private ReactiveCommand<Unit, Unit> EfCommand(
         Func<CancellationToken, Task> run,
         IObservable<bool> canExecute,
         (string Title, string Message)? confirm = null)

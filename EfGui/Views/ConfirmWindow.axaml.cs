@@ -3,7 +3,7 @@ using Avalonia.Interactivity;
 
 namespace EfGui.Views;
 
-public partial class ConfirmWindow : Window
+public sealed partial class ConfirmWindow : Window
 {
     public ConfirmWindow()
     {

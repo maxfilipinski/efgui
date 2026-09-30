@@ -3,16 +3,14 @@ using ReactiveUI.Avalonia;
 
 namespace EfGui;
 
-class Program
+internal sealed class Program
 {
-    // Initialization code. Don't use any Avalonia, third-party APIs or any
-    // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
-    // yet and stuff might break.
+    // Don't touch Avalonia or SynchronizationContext-dependent code before the lifetime starts.
     [STAThread]
     public static void Main(string[] args) => BuildAvaloniaApp()
         .StartWithClassicDesktopLifetime(args);
 
-    // Avalonia configuration, don't remove; also used by visual designer.
+    // Also called by the XAML previewer, so it must stay public and static.
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()

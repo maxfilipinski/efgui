@@ -16,7 +16,7 @@ public static class MigrationListParser
     };
 
     // "applied" is null when listed with --no-connect; treat unknown as not applied.
-    private record Dto(string? Id, string? Name, bool? Applied);
+    private sealed record Dto(string? Id, string? Name, bool? Applied);
 
     // Returns null when the output could not be parsed at all; an empty list means
     // the command succeeded but reported no migrations.

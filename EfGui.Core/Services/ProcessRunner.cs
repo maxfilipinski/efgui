@@ -2,7 +2,7 @@ using CliWrap;
 
 namespace EfGui.Core.Services;
 
-public class ProcessRunner
+public sealed class ProcessRunner
 {
     private readonly IConsole _console;
 

@@ -3,7 +3,7 @@ using EfGui.Core.Services;
 
 namespace EfGui.Core.Engine;
 
-public class DotnetEfRunner : IDotnetEfRunner
+public sealed class DotnetEfRunner : IDotnetEfRunner
 {
     private readonly ProcessRunner _processRunner;
     private readonly IConsole _console;

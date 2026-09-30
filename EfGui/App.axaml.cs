@@ -12,7 +12,7 @@ using EfGui.Views;
 
 namespace EfGui;
 
-public partial class App : Application
+public sealed partial class App : Application
 {
     public override void Initialize()
     {
@@ -29,7 +29,7 @@ public partial class App : Application
         base.OnFrameworkInitializationCompleted();
     }
 
-    private MainWindow CreateMainWindow()
+    private static MainWindow CreateMainWindow()
     {
         var mainWindow = new MainWindow();
         var store = new SettingsStore();

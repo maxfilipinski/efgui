@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace EfGui.Core.Settings;
 
-public class SettingsStore
+public sealed class SettingsStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -197,7 +197,7 @@ public class SettingsStore
         return Secret.Protect(profile.ConnectionString);
     }
 
-    private class StoreData
+    private sealed class StoreData
     {
         public List<Profile> Profiles { get; set; } = new();
         public Guid? LastSelectedProfileId { get; set; }

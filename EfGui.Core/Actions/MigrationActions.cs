@@ -4,7 +4,7 @@ using EfGui.Core.Services;
 
 namespace EfGui.Core.Actions;
 
-public class MigrationActions
+public sealed class MigrationActions
 {
     private readonly IDotnetEfRunner _efRunner;
     private readonly IConsole _console;
