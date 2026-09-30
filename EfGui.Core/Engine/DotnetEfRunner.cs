@@ -3,7 +3,7 @@ using EfGui.Core.Services;
 
 namespace EfGui.Core.Engine;
 
-public class DotnetEfRunner
+public class DotnetEfRunner : IDotnetEfRunner
 {
     private readonly ProcessRunner _processRunner;
     private readonly IConsole _console;
@@ -22,10 +22,11 @@ public class DotnetEfRunner
         bool echoOutput = true,
         CancellationToken cancellationToken = default)
     {
-        if (!File.Exists(profile.CsprojPath))
+        // Profiles are validated on save, but profiles.json can be edited by hand and the
+        // DbContext name ends up in generated code.
+        if (ProfileValidator.Validate(profile) is { } error)
         {
-            _console.WriteLine(ConsoleMessageKind.Error,
-                $"Project file not found: {profile.CsprojPath}");
+            _console.WriteLine(ConsoleMessageKind.Error, $"Profile '{profile.Name}' is invalid: {error}");
             return null;
         }
 

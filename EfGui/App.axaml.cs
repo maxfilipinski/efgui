@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
+using EfGui.Core;
 using EfGui.Core.Actions;
 using EfGui.Core.Engine;
 using EfGui.Core.Services;
@@ -35,7 +36,7 @@ public partial class App : Application
         var console = mainWindow.CreateConsoleRenderer();
         var processRunner = new ProcessRunner(console);
         var efRunner = new DotnetEfRunner(processRunner, console, new DotnetEfTool(processRunner, console));
-        var actions = new MigrationActions(efRunner, console);
+        var actions = new MigrationActions(efRunner, console, AppPaths.ScriptsDir);
 
         var viewModel = new MainWindowViewModel(store, actions, console)
         {

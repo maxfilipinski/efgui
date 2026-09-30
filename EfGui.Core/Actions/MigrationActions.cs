@@ -6,13 +6,15 @@ namespace EfGui.Core.Actions;
 
 public class MigrationActions
 {
-    private readonly DotnetEfRunner _efRunner;
+    private readonly IDotnetEfRunner _efRunner;
     private readonly IConsole _console;
+    private readonly string _scriptsDir;
 
-    public MigrationActions(DotnetEfRunner efRunner, IConsole console)
+    public MigrationActions(IDotnetEfRunner efRunner, IConsole console, string scriptsDir)
     {
         _efRunner = efRunner;
         _console = console;
+        _scriptsDir = scriptsDir;
     }
 
     public async Task CreateMigrationAsync(Profile profile, string name, CancellationToken cancellationToken = default)
@@ -159,9 +161,9 @@ public class MigrationActions
     // Returns the script path, or null when generation failed.
     private async Task<string?> GenerateScriptAsync(Profile profile, string? from, string? to, string label, CancellationToken cancellationToken)
     {
-        Directory.CreateDirectory(AppPaths.ScriptsDir);
+        Directory.CreateDirectory(_scriptsDir);
         var path = Path.Combine(
-            AppPaths.ScriptsDir,
+            _scriptsDir,
             $"{profile.Id:N}-{label}-{DateTime.Now:yyyyMMdd'T'HHmmss}.sql");
 
         var args = new List<string> { "migrations", "script" };
@@ -177,7 +179,7 @@ public class MigrationActions
             return null;
 
         _console.WriteLine(ConsoleMessageKind.Success, $"Script written to: {path}");
-        _console.WriteLine(ConsoleMessageKind.Info, $"Folder: {AppPaths.ScriptsDir}");
+        _console.WriteLine(ConsoleMessageKind.Info, $"Folder: {_scriptsDir}");
         return path;
     }
 }

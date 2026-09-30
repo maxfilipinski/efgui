@@ -1,4 +1,3 @@
-using EfGui.Core.Engine;
 using EfGui.Core.Profiles;
 using ReactiveUI;
 
@@ -142,64 +141,21 @@ public class ProfileEditorViewModel : ViewModelBase
 
     public Profile? TryBuildProfile()
     {
-        ValidationError = Validate();
-        if (ValidationError != null)
-            return null;
+        var profile = _profile.Clone();
+        profile.Name = Name.Trim();
+        profile.CsprojPath = CsprojPath.Trim();
+        profile.DbContextName = DbContextName.Trim();
+        profile.MigrationsDir = MigrationsDir.Trim();
+        profile.TargetFramework = TargetFramework.Trim();
+        profile.DotnetEfVersion = DotnetEfVersion.Trim();
+        profile.EfCoreDesignVersion = EfCoreDesignVersion.Trim();
+        profile.ProviderPackageVersion = ProviderPackageVersion.Trim();
+        profile.DbConfigMode = UseCustomCode ? DbConfigMode.CustomCode : DbConfigMode.ConnectionString;
+        profile.DbProvider = SelectedProvider.Provider;
+        profile.ConnectionString = ConnectionString.Trim();
+        profile.CustomCode = CustomCode;
 
-        _profile.Name = Name.Trim();
-        _profile.CsprojPath = CsprojPath.Trim();
-        _profile.DbContextName = DbContextName.Trim();
-        _profile.MigrationsDir = MigrationsDir.Trim();
-        _profile.TargetFramework = TargetFramework.Trim();
-        _profile.DotnetEfVersion = DotnetEfVersion.Trim();
-        _profile.EfCoreDesignVersion = EfCoreDesignVersion.Trim();
-        _profile.ProviderPackageVersion = ProviderPackageVersion.Trim();
-        _profile.DbConfigMode = UseCustomCode ? DbConfigMode.CustomCode : DbConfigMode.ConnectionString;
-        _profile.DbProvider = SelectedProvider.Provider;
-        _profile.ConnectionString = ConnectionString.Trim();
-        _profile.CustomCode = CustomCode;
-
-        return _profile;
-    }
-
-    private string? Validate()
-    {
-        if (string.IsNullOrWhiteSpace(Name))
-            return "Profile name is required.";
-
-        if (string.IsNullOrWhiteSpace(CsprojPath))
-            return "Project path is required.";
-
-        if (!CsprojPath.Trim().EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
-            return "Project path must point to a .csproj file.";
-
-        if (!File.Exists(CsprojPath.Trim()))
-            return "Project file does not exist.";
-
-        if (string.IsNullOrWhiteSpace(DbContextName))
-            return "DbContext class name is required.";
-
-        if (!CSharpIdentifier.IsValidQualified(DbContextName))
-            return "DbContext class name must be a valid C# type name, e.g. MyApp.Data.AppDbContext.";
-
-        if (string.IsNullOrWhiteSpace(MigrationsDir))
-            return "Migrations directory is required.";
-
-        if (string.IsNullOrWhiteSpace(TargetFramework))
-            return "Target framework is required.";
-
-        if (string.IsNullOrWhiteSpace(DotnetEfVersion))
-            return "dotnet-ef version is required.";
-
-        if (string.IsNullOrWhiteSpace(EfCoreDesignVersion))
-            return "EF Core Design version is required.";
-
-        if (!UseCustomCode && string.IsNullOrWhiteSpace(ConnectionString))
-            return "Connection string is required.";
-
-        if (UseCustomCode && string.IsNullOrWhiteSpace(CustomCode))
-            return "Configuration code is required.";
-
-        return null;
+        ValidationError = ProfileValidator.Validate(profile);
+        return ValidationError is null ? profile : null;
     }
 }
