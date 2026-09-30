@@ -11,10 +11,6 @@
         MinWidth="700" MinHeight="400"
         Title="{Binding WindowTitle}">
 
-    <Design.DataContext>
-      <vm:MainWindowViewModel/>
-    </Design.DataContext>
-
     <Window.Styles>
       <Style Selector="StackPanel.sidebar > Button">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>

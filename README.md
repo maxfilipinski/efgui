@@ -1,49 +1,53 @@
 # EfGui
 
-A desktop GUI for common `dotnet ef` migration tasks, built with Avalonia.
+A desktop app for everyday Entity Framework Core migration work: create, list and remove
+migrations, and generate SQL scripts, with one click instead of remembering `dotnet ef` flags.
 
-The target project needs no changes. It doesn't need `Microsoft.EntityFrameworkCore.Design`
-or an `IDesignTimeDbContextFactory`: EfGui generates a small helper startup project per profile
-that adds both, then runs a pinned `dotnet-ef` against your project through it.
+Your project needs no changes. It doesn't need the EF Core Design package or a design-time
+factory; EfGui provides both behind the scenes.
 
-## Features
+<!-- screenshot -->
 
-- Profiles per project/DbContext, with either a connection string (SQL Server, PostgreSQL,
-  SQLite, MySQL) or custom C# code to configure the context
-- Create, list, and remove migrations; recreate the last migration
-- Generate SQL scripts: full, unapplied (checked against the database), apply and rollback
-  for the last migration
-- Verify a profile (`dbcontext info`) and generate a compiled model (`dbcontext optimize`)
+## Getting started
 
-## Requirements
+1. Install the [.NET SDK](https://dotnet.microsoft.com/download) (10 or later).
+2. Start EfGui (from a clone: `dotnet run --project EfGui`) and click **+** next to the profile list.
+3. Fill in the profile:
+   - **Project**: the `.csproj` that contains your `DbContext` and migrations
+   - **DbContext class**: its full name, e.g. `MyApp.Data.AppDbContext`
+   - **Database configuration**: pick a provider (SQL Server, PostgreSQL, SQLite, MySQL) and enter
+     a connection string, or choose **Custom code** and configure `optionsBuilder` yourself
+   - The version fields should match the EF Core version your project uses
+4. Click **Verify profile**. If the project builds and the context loads, you're set.
 
-- .NET 10 SDK
-- Windows is the primary target. Connection strings are encrypted at rest with DPAPI there;
-  on other platforms they are stored as plain text.
+Create one profile per project and context; switch between them from the dropdown.
 
-## Build and run
+## Actions
 
-```
-dotnet run --project EfGui
-dotnet test
-```
+| Action | What it does |
+| --- | --- |
+| Create migration | Adds a migration with the name you type |
+| List migrations | Shows all migrations and whether they are applied |
+| Generate full migration script | SQL for every migration, from an empty database |
+| Generate unapplied migration script | SQL for the migrations the database doesn't have yet |
+| Generate optimized model | Runs `dbcontext optimize` to create a compiled model |
+| Remove from code | Deletes the last migration's files; refused if it's already applied |
+| Recreate and generate script | Removes the last migration, re-adds it under the same name, and scripts it |
+| Generate apply script | SQL that applies only the last migration |
+| Generate rollback script | SQL that reverts only the last migration |
 
-## Data locations
+Generated scripts open automatically. Output from every command appears in the console on the
+right; **Stop** cancels a running command, and Ctrl+scroll zooms the console.
+
+## Where things are stored
 
 | What | Where |
 | --- | --- |
-| Profiles and UI settings | `%APPDATA%\EfGui\profiles.json` |
-| Pinned `dotnet-ef` installs | `%LOCALAPPDATA%\EfGui\tools\dotnet-ef\<version>` |
-| Generated helper projects | `%LOCALAPPDATA%\EfGui\helpers\<profile-id>` |
+| Profiles and settings | `%APPDATA%\EfGui\profiles.json` |
 | Generated SQL scripts (deleted after 30 days) | `%LOCALAPPDATA%\EfGui\scripts` |
 
-## Project layout
-
-| Project | Contents |
-| --- | --- |
-| `EfGui` | Avalonia app: views, view models, console rendering |
-| `EfGui.Core` | UI-independent logic: profiles, helper project generation, `dotnet-ef` invocation, output parsing |
-| `EfGui.Core.Tests` | xUnit tests for `EfGui.Core` |
+Connection strings are encrypted for your Windows user. On other platforms they are stored as
+plain text.
 
 ## License
 

@@ -2,16 +2,43 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using EfGui.Output;
 using EfGui.ViewModels;
+using ReactiveUI;
+using ReactiveUI.Avalonia;
+using System.Reactive;
+using System.Reactive.Disposables.Fluent;
 
 namespace EfGui.Views;
 
-public sealed partial class MainWindow : Window
+public sealed partial class MainWindow : ReactiveWindow<MainWindowViewModel>
 {
     public MainWindow()
     {
         InitializeComponent();
+
+        this.WhenActivated(disposables =>
+        {
+            if (ViewModel is not { } vm)
+                return;
+
+            vm.ShowProfileEditor.RegisterHandler(async context =>
+            {
+                var editor = new ProfileEditorWindow(new ProfileEditorViewModel(context.Input));
+                context.SetOutput(await editor.ShowDialog<ProfileEditorResult?>(this));
+            }).DisposeWith(disposables);
+
+            vm.Confirm.RegisterHandler(async context =>
+                context.SetOutput(await ConfirmWindow.ShowAsync(this, context.Input.Title, context.Input.Message)))
+                .DisposeWith(disposables);
+
+            vm.OpenFile.RegisterHandler(async context =>
+            {
+                await Launcher.LaunchFileInfoAsync(new FileInfo(context.Input));
+                context.SetOutput(Unit.Default);
+            }).DisposeWith(disposables);
+        });
 
         DataContextChanged += (_, _) =>
         {

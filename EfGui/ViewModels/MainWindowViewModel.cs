@@ -22,9 +22,8 @@ public sealed class MainWindowViewModel : ViewModelBase
         new ConsoleTheme("Navy", "#0C2B4E")
     };
 
-    private readonly SettingsStore? _store;
-    private readonly MigrationActions? _actions;
-    private readonly IConsole? _console;
+    private readonly SettingsStore _store;
+    private readonly IConsole _console;
 
     // Recreated per operation; never disposed so a late Stop click is a safe no-op
     // rather than an ObjectDisposedException race.
@@ -37,15 +36,9 @@ public sealed class MainWindowViewModel : ViewModelBase
     private bool _isBusy;
     private double _consoleFontSize = 13;
 
-    // Design-time constructor for the XAML previewer; commands stay null.
-    public MainWindowViewModel()
-    {
-    }
-
     public MainWindowViewModel(SettingsStore store, MigrationActions actions, IConsole console)
     {
         _store = store;
-        _actions = actions;
         _console = console;
 
         Profiles = new ObservableCollection<Profile>(store.Profiles);
@@ -59,10 +52,57 @@ public sealed class MainWindowViewModel : ViewModelBase
         if (store.LoadError != null)
             console.WriteLine(ConsoleMessageKind.Error, store.LoadError + " Changes will not be saved this session.");
 
-        WireCommands();
+        var notBusy = this.WhenAnyValue(x => x.IsBusy).Select(b => !b);
+        var canRun = this.WhenAnyValue(x => x.SelectedProfile, x => x.IsBusy,
+            (profile, busy) => profile != null && !busy);
+        var canCreate = this.WhenAnyValue(x => x.SelectedProfile, x => x.MigrationName, x => x.IsBusy,
+            (profile, name, busy) => profile != null && !busy && EfGui.Core.Engine.MigrationName.IsValid(name));
+
+        AddProfile = ReactiveCommand.CreateFromTask(async () =>
+        {
+            var result = await ShowProfileEditor.Handle(null);
+            if (result?.Saved != null)
+                ApplyProfileSaved(result.Saved);
+        }, notBusy);
+
+        EditProfile = ReactiveCommand.CreateFromTask(async () =>
+        {
+            if (SelectedProfile is not { } profile)
+                return;
+            var result = await ShowProfileEditor.Handle(profile);
+            if (result?.Saved != null)
+                ApplyProfileSaved(result.Saved);
+            else if (result?.Deleted == true)
+                ApplyProfileDeleted(profile.Id);
+        }, canRun);
+
+        CreateMigration = EfCommand(ct => WithProfile(p => actions.CreateMigrationAsync(p, MigrationName, ct)), canCreate);
+        Verify = EfCommand(ct => WithProfile(p => actions.VerifyAsync(p, ct)), canRun);
+        ListMigrations = EfCommand(ct => WithProfile(p => actions.ListMigrationsAsync(p, ct)), canRun);
+        GenerateFullScript = EfCommand(ct => WithScript(p => actions.GenerateFullScriptAsync(p, ct)), canRun);
+        GenerateUnappliedScript = EfCommand(ct => WithScript(p => actions.GenerateUnappliedScriptAsync(p, ct)), canRun);
+        GenerateOptimizedModel = EfCommand(ct => WithProfile(p => actions.GenerateOptimizedModelAsync(p, ct)), canRun);
+        GenerateApplyScript = EfCommand(ct => WithScript(p => actions.GenerateApplyScriptAsync(p, ct)), canRun);
+        GenerateRollbackScript = EfCommand(ct => WithScript(p => actions.GenerateRollbackScriptAsync(p, ct)), canRun);
+
+        RemoveLastFromCode = EfCommand(
+            ct => WithProfile(p => actions.RemoveLastFromCodeAsync(p, ct)), canRun,
+            confirm: ("Remove migration",
+                "This permanently deletes the most recent migration's files from your project. "
+                + "EF refuses if the migration has been applied to the database. Continue?"));
+
+        RecreateAndGenerateScript = EfCommand(
+            ct => WithScript(p => actions.RecreateAndGenerateScriptAsync(p, ct)), canRun,
+            confirm: ("Recreate migration",
+                "This removes the most recent migration and re-adds it, overwriting its files. Continue?"));
+
+        CancelOperation = ReactiveCommand.Create(
+            () => _operation?.Cancel(), this.WhenAnyValue(x => x.IsBusy));
+
+        ClearConsole = ReactiveCommand.Create(console.Clear);
     }
 
-    public ObservableCollection<Profile> Profiles { get; } = new();
+    public ObservableCollection<Profile> Profiles { get; }
 
     public Profile? SelectedProfile
     {
@@ -122,15 +162,15 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public double SidebarWidth
     {
-        get => _store?.SidebarWidth ?? DefaultSidebarWidth;
+        get => _store.SidebarWidth;
         set => Persist(s => s.SetSidebarWidth(value));
     }
 
     public (double X, double Y, double Width, double Height)? GetWindowBounds() =>
-        _store?.WindowBounds;
+        _store.WindowBounds;
 
     public void SaveWindowBounds(double x, double y, double width, double height) =>
-        _store?.SetWindowBounds(x, y, width, height);
+        _store.SetWindowBounds(x, y, width, height);
 
     public double ConsoleFontSize
     {
@@ -146,84 +186,26 @@ public sealed class MainWindowViewModel : ViewModelBase
 
     public double ConsoleLineHeight => _consoleFontSize * 1.4;
 
-    // Set by the view: opens the profile editor (null = add), the confirm dialog, and a
-    // generated file in its associated application.
-    public Func<Profile?, Task<ProfileEditorResult?>>? ShowProfileEditor { get; set; }
-    public Func<string, string, Task<bool>>? ConfirmAsync { get; set; }
-    public Func<string, Task>? OpenFile { get; set; }
+    // Handled by the view: the profile editor (input null = add), the confirm dialog, and
+    // opening a generated file in its associated application.
+    public Interaction<Profile?, ProfileEditorResult?> ShowProfileEditor { get; } = new();
+    public Interaction<(string Title, string Message), bool> Confirm { get; } = new();
+    public Interaction<string, Unit> OpenFile { get; } = new();
 
-    public ICommand? AddProfile { get; private set; }
-    public ICommand? EditProfile { get; private set; }
-    public ICommand? CreateMigration { get; private set; }
-    public ICommand? Verify { get; private set; }
-    public ICommand? ListMigrations { get; private set; }
-    public ICommand? GenerateFullScript { get; private set; }
-    public ICommand? GenerateUnappliedScript { get; private set; }
-    public ICommand? GenerateOptimizedModel { get; private set; }
-    public ICommand? RemoveLastFromCode { get; private set; }
-    public ICommand? RecreateAndGenerateScript { get; private set; }
-    public ICommand? GenerateApplyScript { get; private set; }
-    public ICommand? GenerateRollbackScript { get; private set; }
-    public ICommand? CancelOperation { get; private set; }
-    public ICommand? ClearConsole { get; private set; }
-
-    private void WireCommands()
-    {
-        var actions = _actions!;
-        var console = _console!;
-
-        var notBusy = this.WhenAnyValue(x => x.IsBusy).Select(b => !b);
-        var canRun = this.WhenAnyValue(x => x.SelectedProfile, x => x.IsBusy,
-            (profile, busy) => profile != null && !busy);
-        var canCreate = this.WhenAnyValue(x => x.SelectedProfile, x => x.MigrationName, x => x.IsBusy,
-            (profile, name, busy) => profile != null && !busy && EfGui.Core.Engine.MigrationName.IsValid(name));
-
-        AddProfile = ReactiveCommand.CreateFromTask(async () =>
-        {
-            if (ShowProfileEditor is null)
-                return;
-            var result = await ShowProfileEditor(null);
-            if (result?.Saved != null)
-                ApplyProfileSaved(result.Saved);
-        }, notBusy);
-
-        EditProfile = ReactiveCommand.CreateFromTask(async () =>
-        {
-            var profile = SelectedProfile;
-            if (profile is null || ShowProfileEditor is null)
-                return;
-            var result = await ShowProfileEditor(profile);
-            if (result?.Saved != null)
-                ApplyProfileSaved(result.Saved);
-            else if (result?.Deleted == true)
-                ApplyProfileDeleted(profile.Id);
-        }, canRun);
-
-        CreateMigration = EfCommand(ct => WithProfile(p => actions.CreateMigrationAsync(p, MigrationName, ct)), canCreate);
-        Verify = EfCommand(ct => WithProfile(p => actions.VerifyAsync(p, ct)), canRun);
-        ListMigrations = EfCommand(ct => WithProfile(p => actions.ListMigrationsAsync(p, ct)), canRun);
-        GenerateFullScript = EfCommand(ct => WithScript(p => actions.GenerateFullScriptAsync(p, ct)), canRun);
-        GenerateUnappliedScript = EfCommand(ct => WithScript(p => actions.GenerateUnappliedScriptAsync(p, ct)), canRun);
-        GenerateOptimizedModel = EfCommand(ct => WithProfile(p => actions.GenerateOptimizedModelAsync(p, ct)), canRun);
-        GenerateApplyScript = EfCommand(ct => WithScript(p => actions.GenerateApplyScriptAsync(p, ct)), canRun);
-        GenerateRollbackScript = EfCommand(ct => WithScript(p => actions.GenerateRollbackScriptAsync(p, ct)), canRun);
-
-        RemoveLastFromCode = EfCommand(
-            ct => WithProfile(p => actions.RemoveLastFromCodeAsync(p, ct)), canRun,
-            confirm: ("Remove migration",
-                "This permanently deletes the most recent migration's files from your project. "
-                + "EF refuses if the migration has been applied to the database. Continue?"));
-
-        RecreateAndGenerateScript = EfCommand(
-            ct => WithScript(p => actions.RecreateAndGenerateScriptAsync(p, ct)), canRun,
-            confirm: ("Recreate migration",
-                "This removes the most recent migration and re-adds it, overwriting its files. Continue?"));
-
-        CancelOperation = ReactiveCommand.Create(
-            () => _operation?.Cancel(), this.WhenAnyValue(x => x.IsBusy));
-
-        ClearConsole = ReactiveCommand.Create(console.Clear);
-    }
+    public ICommand AddProfile { get; }
+    public ICommand EditProfile { get; }
+    public ICommand CreateMigration { get; }
+    public ICommand Verify { get; }
+    public ICommand ListMigrations { get; }
+    public ICommand GenerateFullScript { get; }
+    public ICommand GenerateUnappliedScript { get; }
+    public ICommand GenerateOptimizedModel { get; }
+    public ICommand RemoveLastFromCode { get; }
+    public ICommand RecreateAndGenerateScript { get; }
+    public ICommand GenerateApplyScript { get; }
+    public ICommand GenerateRollbackScript { get; }
+    public ICommand CancelOperation { get; }
+    public ICommand ClearConsole { get; }
 
     private Task WithProfile(Func<Profile, Task> body) =>
         SelectedProfile is { } profile ? body(profile) : Task.CompletedTask;
@@ -231,8 +213,8 @@ public sealed class MainWindowViewModel : ViewModelBase
     private Task WithScript(Func<Profile, Task<string?>> generate) =>
         WithProfile(async profile =>
         {
-            if (await generate(profile) is { } path && OpenFile is not null)
-                await OpenFile(path);
+            if (await generate(profile) is { } path)
+                await OpenFile.Handle(path);
         });
 
     // Serializes EF operations behind IsBusy, optionally confirms first, and surfaces failures.
@@ -243,7 +225,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     {
         return ReactiveCommand.CreateFromTask(async () =>
         {
-            if (confirm is { } c && ConfirmAsync is not null && !await ConfirmAsync(c.Title, c.Message))
+            if (confirm is { } c && !await Confirm.Handle(c))
                 return;
 
             var cts = new CancellationTokenSource();
@@ -259,7 +241,7 @@ public sealed class MainWindowViewModel : ViewModelBase
             }
             catch (Exception ex)
             {
-                _console!.WriteLine(ConsoleMessageKind.Error, ex.Message);
+                _console.WriteLine(ConsoleMessageKind.Error, ex.Message);
             }
             finally
             {
@@ -273,16 +255,13 @@ public sealed class MainWindowViewModel : ViewModelBase
     // and the next successful save persists it.
     private void Persist(Action<SettingsStore> save)
     {
-        if (_store is null)
-            return;
-
         try
         {
             save(_store);
         }
         catch (Exception ex) when (SettingsStore.IsFileAccessError(ex))
         {
-            _console?.WriteLine(ConsoleMessageKind.Error, $"Could not save settings: {ex.Message}");
+            _console.WriteLine(ConsoleMessageKind.Error, $"Could not save settings: {ex.Message}");
         }
     }
 
@@ -312,7 +291,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex) when (SettingsStore.IsFileAccessError(ex))
         {
-            _console?.WriteLine(ConsoleMessageKind.Error, $"Could not delete the profile's helper project: {ex.Message}");
+            _console.WriteLine(ConsoleMessageKind.Error, $"Could not delete the profile's helper project: {ex.Message}");
         }
 
         var existing = Profiles.FirstOrDefault(p => p.Id == profileId);

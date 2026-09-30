@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Avalonia.Platform.Storage;
 using EfGui.Core;
 using EfGui.Core.Actions;
 using EfGui.Core.Engine;
@@ -39,18 +38,7 @@ public sealed partial class App : Application
         var actions = new MigrationActions(efRunner, console, AppPaths.ScriptsDir);
         actions.DeleteScriptsOlderThan(TimeSpan.FromDays(30));
 
-        var viewModel = new MainWindowViewModel(store, actions, console)
-        {
-            ShowProfileEditor = profile =>
-            {
-                var editor = new ProfileEditorWindow(new ProfileEditorViewModel(profile));
-                return editor.ShowDialog<ProfileEditorResult?>(mainWindow);
-            },
-            ConfirmAsync = (title, message) => ConfirmWindow.ShowAsync(mainWindow, title, message),
-            OpenFile = path => mainWindow.Launcher.LaunchFileInfoAsync(new FileInfo(path))
-        };
-
-        mainWindow.DataContext = viewModel;
+        mainWindow.DataContext = new MainWindowViewModel(store, actions, console);
         return mainWindow;
     }
 }

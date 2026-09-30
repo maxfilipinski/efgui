@@ -49,6 +49,20 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void Saving_encrypts_the_file_but_keeps_profiles_in_memory_readable()
+    {
+        var store = new SettingsStore(FilePath);
+        var profile = new Profile { Name = "P", ConnectionString = "Password=secret" };
+
+        store.Add(profile);
+
+        Assert.Equal("Password=secret", profile.ConnectionString);
+        Assert.Equal("Password=secret", new SettingsStore(FilePath).Profiles[0].ConnectionString);
+        if (OperatingSystem.IsWindows())
+            Assert.DoesNotContain("secret", File.ReadAllText(FilePath));
+    }
+
+    [Fact]
     public void Save_leaves_no_temp_file_behind()
     {
         var store = new SettingsStore(FilePath);

@@ -133,6 +133,7 @@ public sealed class SettingsStore
             var json = File.ReadAllText(_filePath);
             _data = JsonSerializer.Deserialize<StoreData>(json, JsonOptions) ?? new StoreData();
 
+            // Freshly deserialized, so decrypting in place touches nothing callers hold.
             foreach (var profile in _data.Profiles)
             {
                 if (!Secret.TryUnprotect(profile.ConnectionString, out var plaintext))
@@ -170,27 +171,23 @@ public sealed class SettingsStore
 
         Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
 
-        // Encrypt sensitive fields only for serialization, then restore the in-memory
-        // plaintext so callers keep seeing usable values. Synchronous, so no race.
-        var plaintext = _data.Profiles.Select(p => p.ConnectionString).ToList();
-        try
-        {
-            foreach (var profile in _data.Profiles)
-                profile.ConnectionString = ProtectForSave(profile);
+        // Serialize copies carrying the encrypted value; the in-memory profiles keep plaintext.
+        var stored = _data with { Profiles = _data.Profiles.Select(ToStored).ToList() };
 
-            // Write-then-rename so a crash mid-write cannot corrupt the existing store.
-            var tempPath = _filePath + ".tmp";
-            File.WriteAllText(tempPath, JsonSerializer.Serialize(_data, JsonOptions));
-            File.Move(tempPath, _filePath, overwrite: true);
-        }
-        finally
-        {
-            for (var i = 0; i < _data.Profiles.Count; i++)
-                _data.Profiles[i].ConnectionString = plaintext[i];
-        }
+        // Write-then-rename so a crash mid-write cannot corrupt the existing store.
+        var tempPath = _filePath + ".tmp";
+        File.WriteAllText(tempPath, JsonSerializer.Serialize(stored, JsonOptions));
+        File.Move(tempPath, _filePath, overwrite: true);
     }
 
-    private string ProtectForSave(Profile profile)
+    private Profile ToStored(Profile profile)
+    {
+        var stored = profile.Clone();
+        stored.ConnectionString = ProtectConnectionString(profile);
+        return stored;
+    }
+
+    private string ProtectConnectionString(Profile profile)
     {
         if (_unreadableSecrets.TryGetValue(profile.Id, out var ciphertext))
         {
@@ -211,7 +208,7 @@ public sealed class SettingsStore
         return stored;
     }
 
-    private sealed class StoreData
+    private sealed record StoreData
     {
         public List<Profile> Profiles { get; set; } = new();
         public Guid? LastSelectedProfileId { get; set; }
