@@ -1,7 +1,4 @@
-using System;
-using System.IO;
-
-namespace EfGui;
+namespace EfGui.Core;
 
 // Single source of truth for the locations EfGui reads and writes.
 public static class AppPaths

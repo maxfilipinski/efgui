@@ -1,4 +1,4 @@
-namespace EfGui.Services;
+namespace EfGui.Core.Services;
 
 public enum ConsoleMessageKind
 {

@@ -1,4 +1,4 @@
-using EfGui.Profiles;
+using EfGui.Core.Profiles;
 
 namespace EfGui.Tests;
 
@@ -55,5 +55,22 @@ public sealed class ProfileStoreTests : IDisposable
 
         Assert.True(File.Exists(FilePath));
         Assert.Empty(Directory.GetFiles(_dir, "*.tmp"));
+    }
+
+    [Fact]
+    public void Unreadable_file_is_reported_and_never_overwritten()
+    {
+        var id = Guid.NewGuid();
+        WriteStoreWithConnectionString(id, "");
+        var original = File.ReadAllText(FilePath);
+
+        ProfileStore store;
+        using (new FileStream(FilePath, FileMode.Open, FileAccess.Read, FileShare.None))
+            store = new ProfileStore(FilePath);
+
+        Assert.NotNull(store.LoadError);
+        store.Add(new Profile { Name = "New" });
+
+        Assert.Equal(original, File.ReadAllText(FilePath));
     }
 }

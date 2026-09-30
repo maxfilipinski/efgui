@@ -1,11 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace EfGui.Profiles;
+namespace EfGui.Core.Profiles;
 
 public class ProfileStore
 {
@@ -32,6 +28,10 @@ public class ProfileStore
         _filePath = filePath;
         Load();
     }
+
+    // Set when the file exists but could not be read. Saving is then disabled for the
+    // session so the unreadable file is never overwritten with an empty store.
+    public string? LoadError { get; private set; }
 
     public IReadOnlyList<Profile> Profiles => _data.Profiles;
 
@@ -137,13 +137,31 @@ public class ProfileStore
         catch (JsonException)
         {
             // Corrupted store: keep a backup aside and start fresh rather than crash on startup.
-            File.Copy(_filePath, _filePath + ".bak", overwrite: true);
             _data = new StoreData();
+            try
+            {
+                File.Copy(_filePath, _filePath + ".bak", overwrite: true);
+            }
+            catch (Exception ex) when (IsFileAccessError(ex))
+            {
+                LoadError = $"Could not back up corrupted settings file {_filePath}: {ex.Message}";
+            }
+        }
+        catch (Exception ex) when (IsFileAccessError(ex))
+        {
+            _data = new StoreData();
+            LoadError = $"Could not read settings file {_filePath}: {ex.Message}";
         }
     }
 
+    public static bool IsFileAccessError(Exception ex) =>
+        ex is IOException or UnauthorizedAccessException;
+
     private void Save()
     {
+        if (LoadError != null)
+            return;
+
         Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
 
         // Encrypt sensitive fields only for serialization, then restore the in-memory

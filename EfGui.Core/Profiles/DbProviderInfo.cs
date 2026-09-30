@@ -1,6 +1,4 @@
-using System.Collections.Generic;
-
-namespace EfGui.Profiles;
+namespace EfGui.Core.Profiles;
 
 public class DbProviderInfo
 {
@@ -11,7 +9,7 @@ public class DbProviderInfo
     // Fallback for providers versioned independently of EF Core.
     public string? IndependentDefaultVersion { get; init; }
 
-    // optionsBuilder statement emitted into the helper project factory; {0} = connection string literal.
+    // optionsBuilder statement emitted into the helper project factory; {0} = connection string expression.
     public required string ConfigureStatementFormat { get; init; }
 
     public string GetConfigureStatement(string connectionStringLiteral) =>

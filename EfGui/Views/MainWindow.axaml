@@ -123,9 +123,9 @@
 
         <TextBlock Classes="section" Text="Last migration actions"/>
         <Button Classes="destructive" Content="Remove from code" Command="{Binding RemoveLastFromCode}"
-                ToolTip.Tip="dotnet ef migrations remove --force"/>
+                ToolTip.Tip="dotnet ef migrations remove — refused if the migration is applied to the database"/>
         <Button Content="Recreate and generate script" Command="{Binding RecreateAndGenerateScript}"
-                ToolTip.Tip="migrations remove --force, then add with the same name, then script"/>
+                ToolTip.Tip="migrations remove, then add with the same name, then script"/>
         <Button Content="Generate apply script" Command="{Binding GenerateApplyScript}"
                 ToolTip.Tip="dotnet ef migrations script &lt;previous&gt; &lt;last&gt;"/>
         <Button Content="Generate rollback script" Command="{Binding GenerateRollbackScript}"

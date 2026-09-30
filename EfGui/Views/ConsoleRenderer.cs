@@ -2,7 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Media;
 using Avalonia.Threading;
-using EfGui.Services;
+using EfGui.Core.Services;
 
 namespace EfGui.Views;
 

@@ -1,8 +1,7 @@
-using System;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace EfGui.Profiles;
+namespace EfGui.Core.Profiles;
 
 // Protects sensitive profile fields (connection strings, which often carry
 // passwords) at rest. Uses Windows DPAPI scoped to the current user; on other

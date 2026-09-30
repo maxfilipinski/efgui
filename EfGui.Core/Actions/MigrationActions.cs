@@ -1,14 +1,9 @@
-using EfGui.Engine;
-using EfGui.Profiles;
-using EfGui.Services;
-using System;
-using System.Collections.Generic;
+using EfGui.Core.Engine;
+using EfGui.Core.Profiles;
+using EfGui.Core.Services;
 using System.Diagnostics;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace EfGui.Actions;
+namespace EfGui.Core.Actions;
 
 public class MigrationActions
 {
@@ -79,8 +74,9 @@ public class MigrationActions
 
     public async Task RemoveLastFromCodeAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        // --force: remove from code regardless of whether the migration was applied to the database.
-        await _engine.RunAsync(profile, new[] { "migrations", "remove", "--force" }, cancellationToken);
+        // No --force: that would also revert the migration in the database. Without it,
+        // EF refuses to remove a migration that has already been applied.
+        await _engine.RunAsync(profile, new[] { "migrations", "remove" }, cancellationToken);
     }
 
     public async Task RecreateAndGenerateScriptAsync(Profile profile, CancellationToken cancellationToken = default)
@@ -97,7 +93,7 @@ public class MigrationActions
 
         _console.WriteLine(ConsoleMessageKind.Info, $"Recreating migration '{name}'...");
 
-        var removed = await _engine.RunAsync(profile, new[] { "migrations", "remove", "--force" }, cancellationToken);
+        var removed = await _engine.RunAsync(profile, new[] { "migrations", "remove" }, cancellationToken);
         if (removed?.Succeeded != true)
             return;
 
@@ -107,7 +103,11 @@ public class MigrationActions
             "--output-dir", profile.MigrationsDir
         }, cancellationToken);
         if (added?.Succeeded != true)
+        {
+            _console.WriteLine(ConsoleMessageKind.Error,
+                $"Migration '{name}' was removed but could not be re-added. Fix the error above, then create it again with the name '{name}'.");
             return;
+        }
 
         await GenerateScriptAsync(profile, previous, to: null, "recreated", cancellationToken);
     }

@@ -1,5 +1,5 @@
-using EfGui.Engine;
-using EfGui.Profiles;
+using EfGui.Core.Engine;
+using EfGui.Core.Profiles;
 
 namespace EfGui.Tests;
 
@@ -39,15 +39,16 @@ public class HelperProjectGeneratorTests
     }
 
     [Fact]
-    public void Connection_string_is_emitted_as_verbatim_literal_with_escaped_quotes()
+    public void Connection_string_is_read_from_environment_not_written_to_source()
     {
         var profile = BaseProfile();
-        profile.ConnectionString = "Server=.;Password=\"p\"";
+        profile.ConnectionString = "Server=.;Password=secret";
 
         var (_, factory) = HelperProjectGenerator.BuildSources(profile);
 
-        // Verbatim string with doubled quotes: @"Server=.;Password=""p"""
-        Assert.Contains("@\"Server=.;Password=\"\"p\"\"\"", factory);
+        Assert.DoesNotContain("secret", factory);
+        Assert.Contains($"GetEnvironmentVariable(\"{HelperProjectGenerator.ConnectionStringVariable}\")", factory);
+        Assert.Contains("optionsBuilder.UseSqlite(connectionString);", factory);
     }
 
     [Fact]

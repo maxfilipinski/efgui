@@ -1,9 +1,6 @@
-using EfGui.Engine;
-using EfGui.Profiles;
+using EfGui.Core.Engine;
+using EfGui.Core.Profiles;
 using ReactiveUI;
-using System;
-using System.Collections.Generic;
-using System.IO;
 
 namespace EfGui.ViewModels;
 

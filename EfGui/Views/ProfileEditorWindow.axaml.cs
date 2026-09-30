@@ -2,7 +2,6 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using EfGui.ViewModels;
-using System.Linq;
 
 namespace EfGui.Views;
 

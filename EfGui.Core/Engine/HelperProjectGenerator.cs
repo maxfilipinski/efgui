@@ -1,16 +1,18 @@
-using EfGui.Profiles;
-using System;
-using System.IO;
+using EfGui.Core.Profiles;
 using System.Security;
 using System.Text;
 
-namespace EfGui.Engine;
+namespace EfGui.Core.Engine;
 
 // Generates the temporary project that gives dotnet-ef a startup project with the
 // EF Design package and an IDesignTimeDbContextFactory, so the target project
 // needs neither.
 public static class HelperProjectGenerator
 {
+    // The connection string reaches the helper through the environment so it is never
+    // written to disk in plain text.
+    public const string ConnectionStringVariable = "EFGUI_CONNECTION_STRING";
+
     public static string Generate(Profile profile)
     {
         // Stable per profile so the helper's obj/bin stay warm between runs.
@@ -23,6 +25,13 @@ public static class HelperProjectGenerator
         WriteIfChanged(Path.Combine(dir, "DesignTimeFactory.cs"), factory);
 
         return csprojPath;
+    }
+
+    public static void Delete(Guid profileId)
+    {
+        var dir = AppPaths.HelperDir(profileId);
+        if (Directory.Exists(dir))
+            Directory.Delete(dir, recursive: true);
     }
 
     // Pure source generation, separated from disk I/O for testing.
@@ -69,8 +78,11 @@ public static class HelperProjectGenerator
 
         var configuration = profile.DbConfigMode == DbConfigMode.CustomCode
             ? IndentLines(profile.CustomCode, "            ")
-            : "            " + DbProviderInfo.Get(profile.DbProvider)
-                .GetConfigureStatement(ToVerbatimLiteral(profile.ConnectionString));
+            : $$"""
+                            var connectionString = System.Environment.GetEnvironmentVariable("{{ConnectionStringVariable}}")
+                                ?? throw new System.InvalidOperationException("{{ConnectionStringVariable}} is not set.");
+                            {{DbProviderInfo.Get(profile.DbProvider).GetConfigureStatement("connectionString")}}
+                """;
 
         return $$"""
             using Microsoft.EntityFrameworkCore;
@@ -100,9 +112,6 @@ public static class HelperProjectGenerator
     }
 
     private static string Xml(string value) => SecurityElement.Escape(value);
-
-    private static string ToVerbatimLiteral(string value) =>
-        "@\"" + value.Replace("\"", "\"\"") + "\"";
 
     private static string IndentLines(string code, string indent)
     {

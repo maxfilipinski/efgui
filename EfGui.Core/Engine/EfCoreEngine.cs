@@ -1,11 +1,7 @@
-using EfGui.Profiles;
-using EfGui.Services;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
+using EfGui.Core.Profiles;
+using EfGui.Core.Services;
 
-namespace EfGui.Engine;
+namespace EfGui.Core.Engine;
 
 public class EfCoreEngine
 {
@@ -65,6 +61,10 @@ public class EfCoreEngine
             efExePath,
             args,
             workingDirectory: Path.GetDirectoryName(profile.CsprojPath),
+            environment: new Dictionary<string, string?>
+            {
+                [HelperProjectGenerator.ConnectionStringVariable] = profile.ConnectionString
+            },
             echoStdOut: echoOutput,
             cancellationToken: cancellationToken);
     }

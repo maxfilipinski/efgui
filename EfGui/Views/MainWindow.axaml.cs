@@ -3,8 +3,6 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using EfGui.ViewModels;
-using System;
-using System.Linq;
 
 namespace EfGui.Views;
 

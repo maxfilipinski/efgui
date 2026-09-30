@@ -1,6 +1,5 @@
-﻿using Avalonia;
+using Avalonia;
 using ReactiveUI.Avalonia;
-using System;
 
 namespace EfGui;
 

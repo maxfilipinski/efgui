@@ -1,16 +1,11 @@
 using Avalonia.Media;
-using EfGui.Actions;
-using EfGui.Engine;
-using EfGui.Profiles;
-using EfGui.Services;
+using EfGui.Core.Actions;
+using EfGui.Core.Engine;
+using EfGui.Core.Profiles;
+using EfGui.Core.Services;
 using ReactiveUI;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Reactive.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace EfGui.ViewModels;
@@ -62,6 +57,9 @@ public class MainWindowViewModel : ViewModelBase
         // Null when the stored hex was hand-edited to a non-preset value; the brush still honors it.
         _selectedConsoleTheme = ConsoleThemePresets.FirstOrDefault(t => t.Hex == _consoleBackgroundHex);
 
+        if (store.LoadError != null)
+            console.WriteLine(ConsoleMessageKind.Error, store.LoadError + " Changes will not be saved this session.");
+
         WireCommands();
     }
 
@@ -76,7 +74,7 @@ public class MainWindowViewModel : ViewModelBase
             this.RaisePropertyChanged(nameof(WindowTitle));
             this.RaisePropertyChanged(nameof(ConsoleHintText));
             if (value != null)
-                _store?.SetLastSelected(value.Id);
+                Persist(s => s.SetLastSelected(value.Id));
         }
     }
 
@@ -99,7 +97,7 @@ public class MainWindowViewModel : ViewModelBase
             if (value != null)
             {
                 _consoleBackgroundHex = value.Hex;
-                _store?.SetConsoleBackground(value.Hex);
+                Persist(s => s.SetConsoleBackground(value.Hex));
                 this.RaisePropertyChanged(nameof(ConsoleBackground));
             }
         }
@@ -125,7 +123,7 @@ public class MainWindowViewModel : ViewModelBase
     public double SidebarWidth
     {
         get => _store?.SidebarWidth ?? DefaultSidebarWidth;
-        set => _store?.SetSidebarWidth(value);
+        set => Persist(s => s.SetSidebarWidth(value));
     }
 
     public (double X, double Y, double Width, double Height)? GetWindowBounds() =>
@@ -142,7 +140,7 @@ public class MainWindowViewModel : ViewModelBase
             var clamped = Math.Clamp(value, 10, 24);
             this.RaiseAndSetIfChanged(ref _consoleFontSize, clamped);
             this.RaisePropertyChanged(nameof(ConsoleLineHeight));
-            _store?.SetConsoleFontSize(clamped);
+            Persist(s => s.SetConsoleFontSize(clamped));
         }
     }
 
@@ -176,7 +174,7 @@ public class MainWindowViewModel : ViewModelBase
         var canRun = this.WhenAnyValue(x => x.SelectedProfile, x => x.IsBusy,
             (profile, busy) => profile != null && !busy);
         var canCreate = this.WhenAnyValue(x => x.SelectedProfile, x => x.MigrationName, x => x.IsBusy,
-            (profile, name, busy) => profile != null && !busy && EfGui.Engine.MigrationName.IsValid(name));
+            (profile, name, busy) => profile != null && !busy && EfGui.Core.Engine.MigrationName.IsValid(name));
 
         AddProfile = ReactiveCommand.CreateFromTask(async () =>
         {
@@ -211,7 +209,8 @@ public class MainWindowViewModel : ViewModelBase
         RemoveLastFromCode = EfCommand(
             ct => WithProfile(p => actions.RemoveLastFromCodeAsync(p, ct)), canRun,
             confirm: ("Remove migration",
-                "This permanently deletes the most recent migration's files from your project. Continue?"));
+                "This permanently deletes the most recent migration's files from your project. "
+                + "EF refuses if the migration has been applied to the database. Continue?"));
 
         RecreateAndGenerateScript = EfCommand(
             ct => WithProfile(p => actions.RecreateAndGenerateScriptAsync(p, ct)), canRun,
@@ -261,17 +260,34 @@ public class MainWindowViewModel : ViewModelBase
         }, canExecute);
     }
 
+    // The in-memory state is already updated when a save fails, so the UI stays consistent
+    // and the next successful save persists it.
+    private void Persist(Action<ProfileStore> save)
+    {
+        if (_store is null)
+            return;
+
+        try
+        {
+            save(_store);
+        }
+        catch (Exception ex) when (ProfileStore.IsFileAccessError(ex))
+        {
+            _console?.WriteLine(ConsoleMessageKind.Error, $"Could not save settings: {ex.Message}");
+        }
+    }
+
     public void ApplyProfileSaved(Profile profile)
     {
         var existing = Profiles.FirstOrDefault(p => p.Id == profile.Id);
         if (existing is null)
         {
-            _store?.Add(profile);
+            Persist(s => s.Add(profile));
             Profiles.Add(profile);
         }
         else
         {
-            _store?.Update(profile);
+            Persist(s => s.Update(profile));
             Profiles[Profiles.IndexOf(existing)] = profile;
         }
 
@@ -280,7 +296,15 @@ public class MainWindowViewModel : ViewModelBase
 
     public void ApplyProfileDeleted(Guid profileId)
     {
-        _store?.Remove(profileId);
+        Persist(s => s.Remove(profileId));
+        try
+        {
+            HelperProjectGenerator.Delete(profileId);
+        }
+        catch (Exception ex) when (ProfileStore.IsFileAccessError(ex))
+        {
+            _console?.WriteLine(ConsoleMessageKind.Error, $"Could not delete the profile's helper project: {ex.Message}");
+        }
 
         var existing = Profiles.FirstOrDefault(p => p.Id == profileId);
         if (existing != null)

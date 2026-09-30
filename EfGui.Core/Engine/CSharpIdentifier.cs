@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace EfGui.Engine;
+namespace EfGui.Core.Engine;
 
 public static partial class CSharpIdentifier
 {

@@ -1,6 +1,4 @@
-using System;
-
-namespace EfGui.Profiles;
+namespace EfGui.Core.Profiles;
 
 public enum DbConfigMode
 {

@@ -1,4 +1,4 @@
-using EfGui.Engine;
+using EfGui.Core.Engine;
 
 namespace EfGui.Tests;
 

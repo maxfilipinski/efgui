@@ -1,10 +1,6 @@
-using EfGui.Services;
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
+using EfGui.Core.Services;
 
-namespace EfGui.Engine;
+namespace EfGui.Core.Engine;
 
 public class DotnetEfTool
 {

@@ -1,10 +1,10 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using EfGui.Actions;
-using EfGui.Engine;
-using EfGui.Profiles;
-using EfGui.Services;
+using EfGui.Core.Actions;
+using EfGui.Core.Engine;
+using EfGui.Core.Profiles;
+using EfGui.Core.Services;
 using EfGui.ViewModels;
 using EfGui.Views;
 

@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using System.Threading.Tasks;
 
 namespace EfGui.Views;
 
