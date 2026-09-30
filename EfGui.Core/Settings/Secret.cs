@@ -10,20 +10,24 @@ public static class Secret
 {
     private const string Marker = "enc:";
 
-    public static string Protect(string plaintext)
+    // False only when encryption was expected but DPAPI failed, so the value is stored
+    // as plain text; outside Windows plain text is the documented behavior.
+    public static bool TryProtect(string plaintext, out string stored)
     {
+        stored = plaintext;
         if (string.IsNullOrEmpty(plaintext) || !OperatingSystem.IsWindows())
-            return plaintext;
+            return true;
 
         try
         {
             var bytes = ProtectedData.Protect(
                 Encoding.UTF8.GetBytes(plaintext), optionalEntropy: null, DataProtectionScope.CurrentUser);
-            return Marker + Convert.ToBase64String(bytes);
+            stored = Marker + Convert.ToBase64String(bytes);
+            return true;
         }
         catch (CryptographicException)
         {
-            return plaintext;
+            return false;
         }
     }
 

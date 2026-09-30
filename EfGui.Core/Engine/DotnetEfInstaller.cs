@@ -2,12 +2,12 @@ using EfGui.Core.Services;
 
 namespace EfGui.Core.Engine;
 
-public sealed class DotnetEfTool
+public sealed class DotnetEfInstaller
 {
     private readonly ProcessRunner _runner;
     private readonly IConsole _console;
 
-    public DotnetEfTool(ProcessRunner runner, IConsole console)
+    public DotnetEfInstaller(ProcessRunner runner, IConsole console)
     {
         _runner = runner;
         _console = console;

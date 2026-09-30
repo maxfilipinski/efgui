@@ -22,20 +22,28 @@ public sealed partial class ProfileEditorWindow : Window
 
     private ProfileEditorViewModel ViewModel => (ProfileEditorViewModel)DataContext!;
 
+    // async void is unavoidable for an event handler, so nothing may escape it.
     private async void BrowseCsproj_Click(object? sender, RoutedEventArgs e)
     {
-        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        try
         {
-            Title = "Select project file",
-            FileTypeFilter = new[]
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                new FilePickerFileType("C# project") { Patterns = new[] { "*.csproj" } }
-            }
-        });
+                Title = "Select project file",
+                FileTypeFilter = new[]
+                {
+                    new FilePickerFileType("C# project") { Patterns = new[] { "*.csproj" } }
+                }
+            });
 
-        var path = files.Count > 0 ? files[0].TryGetLocalPath() : null;
-        if (path != null)
-            ViewModel.CsprojPath = path;
+            var path = files.Count > 0 ? files[0].TryGetLocalPath() : null;
+            if (path != null)
+                ViewModel.CsprojPath = path;
+        }
+        catch (Exception ex)
+        {
+            ViewModel.ShowError($"Could not open the file picker: {ex.Message}");
+        }
     }
 
     private void Save_Click(object? sender, RoutedEventArgs e)

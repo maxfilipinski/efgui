@@ -141,6 +141,8 @@ public sealed class ProfileEditorViewModel : ViewModelBase
         private set => this.RaiseAndSetIfChanged(ref _validationError, value);
     }
 
+    public void ShowError(string message) => ValidationError = message;
+
     public Profile? TryBuildProfile()
     {
         var profile = _profile.Clone();

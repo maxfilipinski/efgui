@@ -37,6 +37,30 @@ public sealed class MigrationActionsTests : IDisposable
         call[call.ToList().IndexOf("--output") + 1];
 
     [Fact]
+    public void Old_scripts_are_deleted_and_recent_ones_kept()
+    {
+        Directory.CreateDirectory(_scriptsDir);
+        var old = Path.Combine(_scriptsDir, "old.sql");
+        var recent = Path.Combine(_scriptsDir, "recent.sql");
+        var other = Path.Combine(_scriptsDir, "notes.txt");
+        foreach (var file in new[] { old, recent, other })
+            File.WriteAllText(file, "");
+        File.SetLastWriteTimeUtc(old, DateTime.UtcNow.AddDays(-31));
+        File.SetLastWriteTimeUtc(other, DateTime.UtcNow.AddDays(-31));
+
+        var deleted = _actions.DeleteScriptsOlderThan(TimeSpan.FromDays(30));
+
+        Assert.Equal(1, deleted);
+        Assert.False(File.Exists(old));
+        Assert.True(File.Exists(recent));
+        Assert.True(File.Exists(other));
+    }
+
+    [Fact]
+    public void Script_cleanup_tolerates_missing_folder() =>
+        Assert.Equal(0, _actions.DeleteScriptsOlderThan(TimeSpan.FromDays(30)));
+
+    [Fact]
     public async Task Create_passes_trimmed_name_and_output_dir()
     {
         await _actions.CreateMigrationAsync(_profile, "  AddUsers ");

@@ -7,13 +7,13 @@ public sealed class DotnetEfRunner : IDotnetEfRunner
 {
     private readonly ProcessRunner _processRunner;
     private readonly IConsole _console;
-    private readonly DotnetEfTool _tool;
+    private readonly DotnetEfInstaller _installer;
 
-    public DotnetEfRunner(ProcessRunner processRunner, IConsole console, DotnetEfTool tool)
+    public DotnetEfRunner(ProcessRunner processRunner, IConsole console, DotnetEfInstaller installer)
     {
         _processRunner = processRunner;
         _console = console;
-        _tool = tool;
+        _installer = installer;
     }
 
     public async Task<ProcessResult?> RunAsync(
@@ -30,7 +30,7 @@ public sealed class DotnetEfRunner : IDotnetEfRunner
             return null;
         }
 
-        var efExePath = await _tool.EnsureInstalledAsync(profile.DotnetEfVersion, cancellationToken);
+        var efExePath = await _installer.EnsureInstalledAsync(profile.DotnetEfVersion, cancellationToken);
         if (efExePath is null)
             return null;
 

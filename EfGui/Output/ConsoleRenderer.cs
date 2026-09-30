@@ -3,6 +3,7 @@ using Avalonia.Controls.Documents;
 using Avalonia.Media;
 using Avalonia.Threading;
 using EfGui.Core.Services;
+using System.Collections.Concurrent;
 
 namespace EfGui.Output;
 
@@ -24,6 +25,12 @@ public sealed class ConsoleRenderer : IConsole
     private readonly SelectableTextBlock _textBlock;
     private readonly Control _emptyHint;
 
+    // Lines arrive from process output threads and are drained in one UI pass, so a
+    // chatty build costs one layout and scroll per batch instead of per line.
+    // A null entry is a Clear, queued so it stays ordered with the writes around it.
+    private readonly ConcurrentQueue<(ConsoleMessageKind Kind, string Text)?> _pending = new();
+    private int _flushScheduled;
+
     public ConsoleRenderer(ScrollViewer scrollViewer, SelectableTextBlock textBlock, Control emptyHint)
     {
         _scrollViewer = scrollViewer;
@@ -31,35 +38,53 @@ public sealed class ConsoleRenderer : IConsole
         _emptyHint = emptyHint;
     }
 
-    public void WriteLine(ConsoleMessageKind kind, string text)
+    public void WriteLine(ConsoleMessageKind kind, string text) => Enqueue((kind, text));
+
+    public void Clear() => Enqueue(null);
+
+    private void Enqueue((ConsoleMessageKind Kind, string Text)? item)
     {
-        Dispatcher.UIThread.InvokeAsync(() =>
-        {
-            _emptyHint.IsVisible = false;
-
-            var run = new Run(text + "\n") { Foreground = BrushFor(kind) };
-            if (kind == ConsoleMessageKind.Command)
-                run.FontWeight = FontWeight.Bold;
-
-            var inlines = _textBlock.Inlines!;
-            if (inlines.Count >= MaxLines + TrimBatch)
-            {
-                for (var i = 0; i < TrimBatch; i++)
-                    inlines.RemoveAt(0);
-            }
-
-            inlines.Add(run);
-            _scrollViewer.ScrollToEnd();
-        });
+        _pending.Enqueue(item);
+        if (Interlocked.Exchange(ref _flushScheduled, 1) == 0)
+            Dispatcher.UIThread.Post(Flush, DispatcherPriority.Background);
     }
 
-    public void Clear()
+    private void Flush()
     {
-        Dispatcher.UIThread.InvokeAsync(() =>
+        // Reset before draining: anything enqueued from here on schedules another flush.
+        Volatile.Write(ref _flushScheduled, 0);
+
+        var inlines = _textBlock.Inlines!;
+        var batch = new List<Inline>();
+        while (_pending.TryDequeue(out var item))
         {
-            _textBlock.Inlines!.Clear();
-            _emptyHint.IsVisible = true;
-        });
+            if (item is { } line)
+            {
+                batch.Add(CreateRun(line.Kind, line.Text));
+                continue;
+            }
+
+            batch.Clear();
+            inlines.Clear();
+        }
+
+        if (batch.Count > 0)
+        {
+            inlines.AddRange(batch);
+            if (inlines.Count >= MaxLines + TrimBatch)
+                inlines.RemoveRange(0, inlines.Count - MaxLines);
+            _scrollViewer.ScrollToEnd();
+        }
+
+        _emptyHint.IsVisible = inlines.Count == 0;
+    }
+
+    private static Run CreateRun(ConsoleMessageKind kind, string text)
+    {
+        var run = new Run(text + "\n") { Foreground = BrushFor(kind) };
+        if (kind == ConsoleMessageKind.Command)
+            run.FontWeight = FontWeight.Bold;
+        return run;
     }
 
     private static IBrush BrushFor(ConsoleMessageKind kind) => kind switch

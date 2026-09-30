@@ -17,6 +17,30 @@ public sealed class MigrationActions
         _scriptsDir = scriptsDir;
     }
 
+    public int DeleteScriptsOlderThan(TimeSpan age)
+    {
+        if (!Directory.Exists(_scriptsDir))
+            return 0;
+
+        var cutoff = DateTime.UtcNow - age;
+        var deleted = 0;
+        foreach (var file in Directory.EnumerateFiles(_scriptsDir, "*.sql"))
+        {
+            try
+            {
+                if (File.GetLastWriteTimeUtc(file) >= cutoff)
+                    continue;
+                File.Delete(file);
+                deleted++;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // Locked, e.g. open in an editor; retried on the next start.
+            }
+        }
+        return deleted;
+    }
+
     public async Task CreateMigrationAsync(Profile profile, string name, CancellationToken cancellationToken = default)
     {
         await _efRunner.RunAsync(profile, new[]

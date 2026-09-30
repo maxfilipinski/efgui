@@ -55,6 +55,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         // Null when the stored hex was hand-edited to a non-preset value; the brush still honors it.
         _selectedConsoleTheme = ConsoleThemePresets.FirstOrDefault(t => t.Hex == _consoleBackgroundHex);
 
+        store.UnencryptedSecretSaved += message => console.WriteLine(ConsoleMessageKind.Error, message);
         if (store.LoadError != null)
             console.WriteLine(ConsoleMessageKind.Error, store.LoadError + " Changes will not be saved this session.");
 

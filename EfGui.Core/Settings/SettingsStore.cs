@@ -19,6 +19,8 @@ public sealed class SettingsStore
     // verbatim on save so it is not lost, unless the user has entered a new value.
     private readonly Dictionary<Guid, string> _unreadableSecrets = new();
 
+    private bool _warnedUnencrypted;
+
     public SettingsStore()
         : this(AppPaths.SettingsFile)
     {
@@ -33,6 +35,9 @@ public sealed class SettingsStore
     // Set when the file exists but could not be read. Saving is then disabled for the
     // session so the unreadable file is never overwritten with an empty store.
     public string? LoadError { get; private set; }
+
+    // Raised at most once per session when a connection string had to be saved unencrypted.
+    public event Action<string>? UnencryptedSecretSaved;
 
     public IReadOnlyList<Profile> Profiles => _data.Profiles;
 
@@ -194,7 +199,16 @@ public sealed class SettingsStore
             _unreadableSecrets.Remove(profile.Id);
         }
 
-        return Secret.Protect(profile.ConnectionString);
+        if (Secret.TryProtect(profile.ConnectionString, out var stored))
+            return stored;
+
+        if (!_warnedUnencrypted)
+        {
+            _warnedUnencrypted = true;
+            UnencryptedSecretSaved?.Invoke(
+                $"Could not encrypt the connection string of profile '{profile.Name}'; it was saved as plain text in {_filePath}.");
+        }
+        return stored;
     }
 
     private sealed class StoreData

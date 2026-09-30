@@ -35,7 +35,7 @@ dotnet test
 | Profiles and UI settings | `%APPDATA%\EfGui\profiles.json` |
 | Pinned `dotnet-ef` installs | `%LOCALAPPDATA%\EfGui\tools\dotnet-ef\<version>` |
 | Generated helper projects | `%LOCALAPPDATA%\EfGui\helpers\<profile-id>` |
-| Generated SQL scripts | `%LOCALAPPDATA%\EfGui\scripts` |
+| Generated SQL scripts (deleted after 30 days) | `%LOCALAPPDATA%\EfGui\scripts` |
 
 ## Project layout
 
