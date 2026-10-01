@@ -11,7 +11,8 @@ factory; EfGui provides both behind the scenes.
 ## Getting started
 
 1. Install the [.NET SDK](https://dotnet.microsoft.com/download) (10 or later).
-2. Start EfGui (from a clone: `dotnet run --project EfGui`) and click **+** next to the profile list.
+2. Download EfGui from the [releases page](https://github.com/maxfilipinski/efgui/releases) (or, from
+   a clone, run `dotnet run --project EfGui`), start it and click **+** next to the profile list.
 3. Fill in the profile:
    - **Project**: the `.csproj` that contains your `DbContext` and migrations
    - **DbContext class**: its full name, e.g. `MyApp.Data.AppDbContext`
@@ -48,6 +49,21 @@ right; **Stop** cancels a running command, and Ctrl+scroll zooms the console.
 
 Connection strings are encrypted for your Windows user. On other platforms they are stored as
 plain text.
+
+## Building the exe
+
+```
+dotnet publish EfGui -p:PublishProfile=win-x64
+```
+
+This produces a single self-contained `publish\win-x64\EfGui.exe` that runs without .NET
+installed. Running migrations still needs the .NET SDK on the machine. The `linux-x64` and
+`osx-arm64` profiles build the same for Linux and macOS; those builds are experimental and
+untested.
+
+Pushing a `v*` tag (for example `v1.0.0`) builds all three and attaches them to a GitHub release.
+On macOS, the downloaded app isn't notarized, so run `xattr -d com.apple.quarantine EfGui` before
+the first start.
 
 ## License
 

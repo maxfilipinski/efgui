@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            os: windows-latest
+          - rid: linux-x64
+            os: ubuntu-latest
+          # Built on macOS so the SDK can ad-hoc sign the binary; unsigned arm64 binaries won't start.
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - run: dotnet test -c Release
+
+      - name: Publish
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          dotnet publish EfGui -p:PublishProfile=${{ matrix.rid }} -p:Version="$version"
+          mkdir dist
+          if [ "${{ matrix.rid }}" = "win-x64" ]; then
+            mv publish/win-x64/EfGui.exe "dist/EfGui-$version-win-x64.exe"
+          else
+            chmod +x publish/${{ matrix.rid }}/EfGui
+            tar -czf "dist/EfGui-$version-${{ matrix.rid }}.tar.gz" -C publish/${{ matrix.rid }} EfGui
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.rid }}
+          path: dist/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --generate-notes \
+            --notes "Linux and macOS builds are experimental and untested. On those platforms connection strings are stored unencrypted."
