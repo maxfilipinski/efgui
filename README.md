@@ -1,12 +1,12 @@
 # EfGui
 
 A desktop app for everyday Entity Framework Core migration work: create, list and remove
-migrations, and generate SQL scripts, with one click instead of remembering `dotnet ef` flags.
+migrations, and generate SQL scripts with one click instead of remembering `dotnet ef` flags.
 
-Your project needs no changes. It doesn't need the EF Core Design package or a design-time
+The project needs no changes. It doesn't need the EF Core Design package or a design-time
 factory; EfGui provides both behind the scenes.
 
-<!-- screenshot -->
+![img.png](img.png)
 
 ## Getting started
 
@@ -14,12 +14,12 @@ factory; EfGui provides both behind the scenes.
 2. Download EfGui from the [releases page](https://github.com/maxfilipinski/efgui/releases) (or, from
    a clone, run `dotnet run --project EfGui`), start it and click **+** next to the profile list.
 3. Fill in the profile:
-   - **Project**: the `.csproj` that contains your `DbContext` and migrations
+   - **Project**: the `.csproj` that contains `DbContext` and migrations
    - **DbContext class**: its full name, e.g. `MyApp.Data.AppDbContext`
    - **Database configuration**: pick a provider (SQL Server, PostgreSQL, SQLite, MySQL) and enter
-     a connection string, or choose **Custom code** and configure `optionsBuilder` yourself
-   - The version fields should match the EF Core version your project uses
-4. Click **Verify profile**. If the project builds and the context loads, you're set.
+     a connection string, or choose **Custom code** and configure `optionsBuilder`
+   - The version fields should match the EF Core version the project uses
+4. Click **Verify profile**. If the project builds and the context loads, it's all set.
 
 Create one profile per project and context; switch between them from the dropdown.
 
@@ -27,7 +27,7 @@ Create one profile per project and context; switch between them from the dropdow
 
 | Action | What it does |
 | --- | --- |
-| Create migration | Adds a migration with the name you type |
+| Create migration | Adds a migration with the typed name |
 | List migrations | Shows all migrations and whether they are applied |
 | Generate full migration script | SQL for every migration, from an empty database |
 | Generate unapplied migration script | SQL for the migrations the database doesn't have yet |
@@ -47,7 +47,7 @@ right; **Stop** cancels a running command, and Ctrl+scroll zooms the console.
 | Profiles and settings | `%APPDATA%\EfGui\profiles.json` |
 | Generated SQL scripts (deleted after 30 days) | `%LOCALAPPDATA%\EfGui\scripts` |
 
-Connection strings are encrypted for your Windows user. On other platforms they are stored as
+Connection strings are encrypted for Windows user. On other platforms they are stored as
 plain text.
 
 ## Building the exe
