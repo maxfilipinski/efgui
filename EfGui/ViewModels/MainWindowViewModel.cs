@@ -5,10 +5,9 @@ using EfGui.Core.Profiles;
 using EfGui.Core.Services;
 using EfGui.Core.Settings;
 using ReactiveUI;
+using ReactiveUI.Primitives;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Reactive;
-using System.Reactive.Linq;
 using System.Windows.Input;
 
 namespace EfGui.ViewModels;
@@ -190,7 +189,7 @@ public sealed class MainWindowViewModel : ViewModelBase
     // opening a generated file in its associated application.
     public Interaction<Profile?, ProfileEditorResult?> ShowProfileEditor { get; } = new();
     public Interaction<(string Title, string Message), bool> Confirm { get; } = new();
-    public Interaction<string, Unit> OpenFile { get; } = new();
+    public Interaction<string, RxVoid> OpenFile { get; } = new();
 
     public ICommand AddProfile { get; }
     public ICommand EditProfile { get; }
@@ -218,7 +217,7 @@ public sealed class MainWindowViewModel : ViewModelBase
         });
 
     // Serializes EF operations behind IsBusy, optionally confirms first, and surfaces failures.
-    private ReactiveCommand<Unit, Unit> EfCommand(
+    private ReactiveCommand<RxVoid, RxVoid> EfCommand(
         Func<CancellationToken, Task> run,
         IObservable<bool> canExecute,
         (string Title, string Message)? confirm = null)

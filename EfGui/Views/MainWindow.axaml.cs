@@ -7,8 +7,7 @@ using EfGui.Output;
 using EfGui.ViewModels;
 using ReactiveUI;
 using ReactiveUI.Avalonia;
-using System.Reactive;
-using System.Reactive.Disposables.Fluent;
+using ReactiveUI.Primitives;
 
 namespace EfGui.Views;
 
@@ -36,7 +35,7 @@ public sealed partial class MainWindow : ReactiveWindow<MainWindowViewModel>
             vm.OpenFile.RegisterHandler(async context =>
             {
                 await Launcher.LaunchFileInfoAsync(new FileInfo(context.Input));
-                context.SetOutput(Unit.Default);
+                context.SetOutput(RxVoid.Default);
             }).DisposeWith(disposables);
         });
 
