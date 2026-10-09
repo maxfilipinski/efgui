@@ -1,6 +1,6 @@
 using CliWrap;
 
-namespace EfGui.Core.Services;
+namespace EfGui.Core.Processes;
 
 public sealed class ProcessRunner
 {
@@ -30,20 +30,28 @@ public sealed class ProcessRunner
             {
                 stdOutLines.Add(line);
                 if (echoStdOut)
+                {
                     _console.WriteLine(ConsoleMessageKind.StdOut, line);
+                }
             }))
             .WithStandardErrorPipe(PipeTarget.ToDelegate(line =>
                 _console.WriteLine(ConsoleMessageKind.StdErr, line)));
 
         if (workingDirectory != null)
+        {
             command = command.WithWorkingDirectory(workingDirectory);
+        }
 
         if (environment != null)
-            command = command.WithEnvironmentVariables(env =>
+        {
+            command = command.WithEnvironmentVariables(variables =>
             {
-                foreach (var (key, value) in environment)
-                    env.Set(key, value);
+                foreach (var (name, value) in environment)
+                {
+                    variables.Set(name, value);
+                }
             });
+        }
 
         try
         {
@@ -62,7 +70,6 @@ public sealed class ProcessRunner
         }
         catch (Exception ex)
         {
-            // E.g. executable not found.
             _console.WriteLine(ConsoleMessageKind.Error, ex.Message);
             return new ProcessResult { ExitCode = -1, StdOutLines = stdOutLines };
         }

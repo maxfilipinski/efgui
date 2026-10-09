@@ -1,10 +1,8 @@
-using EfGui.Core.Actions;
-using EfGui.Core.Engine;
+using EfGui.Core.Migrations;
 using EfGui.Core.Profiles;
-using EfGui.Core.Services;
 using EfGui.Core.Tests.Fakes;
 
-namespace EfGui.Core.Tests;
+namespace EfGui.Core.Tests.Migrations;
 
 public sealed class MigrationActionsTests : IDisposable
 {
@@ -19,18 +17,20 @@ public sealed class MigrationActionsTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_scriptsDir))
+        {
             Directory.Delete(_scriptsDir, recursive: true);
+        }
     }
 
     // Ids follow EF's "<timestamp>_<Name>" shape; the name is the part after the underscore.
     private void GivenMigrations(params (string Id, bool Applied)[] items) =>
-        _runner.Migrations.AddRange(items.Select(i => new MigrationInfo(i.Id, i.Id[(i.Id.IndexOf('_') + 1)..], i.Applied)));
+        _runner.Migrations.AddRange(items.Select(item => new MigrationInfo(item.Id, item.Id[(item.Id.IndexOf('_') + 1)..], item.Applied)));
 
     // The [from] [to] arguments between "migrations script" and "--output".
     private static string[] ScriptRange(IReadOnlyList<string> call)
     {
         Assert.Equal(new[] { "migrations", "script" }, call.Take(2));
-        return call.Skip(2).TakeWhile(a => a != "--output").ToArray();
+        return call.Skip(2).TakeWhile(argument => argument != "--output").ToArray();
     }
 
     private static string OutputPath(IReadOnlyList<string> call) =>
@@ -44,7 +44,10 @@ public sealed class MigrationActionsTests : IDisposable
         var recent = Path.Combine(_scriptsDir, "recent.sql");
         var other = Path.Combine(_scriptsDir, "notes.txt");
         foreach (var file in new[] { old, recent, other })
+        {
             File.WriteAllText(file, "");
+        }
+
         File.SetLastWriteTimeUtc(old, DateTime.UtcNow.AddDays(-31));
         File.SetLastWriteTimeUtc(other, DateTime.UtcNow.AddDays(-31));
 
@@ -63,7 +66,7 @@ public sealed class MigrationActionsTests : IDisposable
     [Fact]
     public async Task Create_passes_trimmed_name_and_output_dir()
     {
-        await _actions.CreateMigrationAsync(_profile, "  AddUsers ");
+        await _actions.CreateMigrationAsync(_profile, "  AddUsers ", TestContext.Current.CancellationToken);
 
         var call = Assert.Single(_runner.Calls);
         Assert.Equal(new[] { "migrations", "add", "AddUsers", "--output-dir", "Data/Migrations" }, call);
@@ -72,7 +75,7 @@ public sealed class MigrationActionsTests : IDisposable
     [Fact]
     public async Task Remove_never_forces()
     {
-        await _actions.RemoveLastFromCodeAsync(_profile);
+        await _actions.RemoveLastFromCodeAsync(_profile, TestContext.Current.CancellationToken);
 
         var call = Assert.Single(_runner.Calls);
         Assert.Equal(new[] { "migrations", "remove" }, call);
@@ -81,7 +84,7 @@ public sealed class MigrationActionsTests : IDisposable
     [Fact]
     public async Task Full_script_has_no_range_and_writes_into_scripts_dir()
     {
-        var path = await _actions.GenerateFullScriptAsync(_profile);
+        var path = await _actions.GenerateFullScriptAsync(_profile, TestContext.Current.CancellationToken);
 
         var call = Assert.Single(_runner.Calls);
         Assert.Empty(ScriptRange(call));
@@ -95,7 +98,7 @@ public sealed class MigrationActionsTests : IDisposable
     {
         GivenMigrations(("1_A", true), ("2_B", true), ("3_C", false));
 
-        var path = await _actions.GenerateApplyScriptAsync(_profile);
+        var path = await _actions.GenerateApplyScriptAsync(_profile, TestContext.Current.CancellationToken);
 
         Assert.NotNull(path);
         Assert.Contains("--no-connect", _runner.Calls[0]);
@@ -107,7 +110,7 @@ public sealed class MigrationActionsTests : IDisposable
     {
         GivenMigrations(("1_A", true), ("2_B", true));
 
-        await _actions.GenerateRollbackScriptAsync(_profile);
+        await _actions.GenerateRollbackScriptAsync(_profile, TestContext.Current.CancellationToken);
 
         Assert.Equal(new[] { "2_B", "1_A" }, ScriptRange(_runner.Calls[1]));
     }
@@ -117,7 +120,7 @@ public sealed class MigrationActionsTests : IDisposable
     {
         GivenMigrations(("1_A", true));
 
-        await _actions.GenerateRollbackScriptAsync(_profile);
+        await _actions.GenerateRollbackScriptAsync(_profile, TestContext.Current.CancellationToken);
 
         Assert.Equal(new[] { "1_A", MigrationScriptRange.Start }, ScriptRange(_runner.Calls[1]));
     }
@@ -127,7 +130,7 @@ public sealed class MigrationActionsTests : IDisposable
     {
         GivenMigrations(("1_A", true), ("2_B", false), ("3_C", false));
 
-        await _actions.GenerateUnappliedScriptAsync(_profile);
+        await _actions.GenerateUnappliedScriptAsync(_profile, TestContext.Current.CancellationToken);
 
         Assert.DoesNotContain("--no-connect", _runner.Calls[0]);
         Assert.Equal(new[] { "1_A", "3_C" }, ScriptRange(_runner.Calls[1]));
@@ -138,7 +141,7 @@ public sealed class MigrationActionsTests : IDisposable
     {
         GivenMigrations(("1_A", true), ("2_B", true));
 
-        var path = await _actions.GenerateUnappliedScriptAsync(_profile);
+        var path = await _actions.GenerateUnappliedScriptAsync(_profile, TestContext.Current.CancellationToken);
 
         Assert.Null(path);
         Assert.Single(_runner.Calls);
@@ -148,12 +151,23 @@ public sealed class MigrationActionsTests : IDisposable
     [Fact]
     public async Task Script_actions_stop_when_there_are_no_migrations()
     {
-        Assert.Null(await _actions.GenerateApplyScriptAsync(_profile));
-        Assert.Null(await _actions.GenerateRollbackScriptAsync(_profile));
-        Assert.Null(await _actions.GenerateUnappliedScriptAsync(_profile));
+        Assert.Null(await _actions.GenerateApplyScriptAsync(_profile, TestContext.Current.CancellationToken));
+        Assert.Null(await _actions.GenerateRollbackScriptAsync(_profile, TestContext.Current.CancellationToken));
+        Assert.Null(await _actions.GenerateUnappliedScriptAsync(_profile, TestContext.Current.CancellationToken));
 
-        Assert.All(_runner.Calls, c => Assert.Equal(new[] { "migrations", "list" }, c.Take(2)));
+        Assert.All(_runner.Calls, call => Assert.Equal(new[] { "migrations", "list" }, call.Take(2)));
         Assert.True(_console.Contains(ConsoleMessageKind.Error, "No migrations found"));
+    }
+
+    [Fact]
+    public async Task Failed_listing_is_not_reported_as_no_migrations()
+    {
+        _runner.Fail("migrations list");
+
+        Assert.Null(await _actions.GenerateApplyScriptAsync(_profile, TestContext.Current.CancellationToken));
+        Assert.Null(await _actions.RecreateAndGenerateScriptAsync(_profile, TestContext.Current.CancellationToken));
+
+        Assert.False(_console.Contains(ConsoleMessageKind.Error, "No migrations found"));
     }
 
     [Fact]
@@ -161,7 +175,7 @@ public sealed class MigrationActionsTests : IDisposable
     {
         _runner.Fail("migrations script");
 
-        Assert.Null(await _actions.GenerateFullScriptAsync(_profile));
+        Assert.Null(await _actions.GenerateFullScriptAsync(_profile, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -169,7 +183,7 @@ public sealed class MigrationActionsTests : IDisposable
     {
         GivenMigrations(("1_A", true), ("2_AddUsers", false));
 
-        var path = await _actions.RecreateAndGenerateScriptAsync(_profile);
+        var path = await _actions.RecreateAndGenerateScriptAsync(_profile, TestContext.Current.CancellationToken);
 
         Assert.NotNull(path);
         Assert.Equal(4, _runner.Calls.Count);
@@ -184,7 +198,7 @@ public sealed class MigrationActionsTests : IDisposable
         GivenMigrations(("1_A", true));
         _runner.Fail("migrations remove");
 
-        Assert.Null(await _actions.RecreateAndGenerateScriptAsync(_profile));
+        Assert.Null(await _actions.RecreateAndGenerateScriptAsync(_profile, TestContext.Current.CancellationToken));
         Assert.Equal(2, _runner.Calls.Count);
     }
 
@@ -194,7 +208,7 @@ public sealed class MigrationActionsTests : IDisposable
         GivenMigrations(("1_AddUsers", false));
         _runner.Fail("migrations add");
 
-        Assert.Null(await _actions.RecreateAndGenerateScriptAsync(_profile));
+        Assert.Null(await _actions.RecreateAndGenerateScriptAsync(_profile, TestContext.Current.CancellationToken));
         Assert.Equal(3, _runner.Calls.Count);
         Assert.True(_console.Contains(ConsoleMessageKind.Error, "was removed but could not be re-added"));
         Assert.True(_console.Contains(ConsoleMessageKind.Error, "'AddUsers'"));

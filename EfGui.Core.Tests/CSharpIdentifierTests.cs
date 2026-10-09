@@ -1,5 +1,3 @@
-using EfGui.Core.Engine;
-
 namespace EfGui.Core.Tests;
 
 public class CSharpIdentifierTests

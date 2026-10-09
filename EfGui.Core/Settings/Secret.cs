@@ -3,20 +3,19 @@ using System.Text;
 
 namespace EfGui.Core.Settings;
 
-// Protects sensitive profile fields (connection strings, which often carry
-// passwords) at rest. Uses Windows DPAPI scoped to the current user; on other
-// platforms, or if DPAPI fails, values are stored as-is.
+// Encrypts connection strings at rest with per-user DPAPI; stored as-is outside Windows.
 public static class Secret
 {
     private const string Marker = "enc:";
 
-    // False only when encryption was expected but DPAPI failed, so the value is stored
-    // as plain text; outside Windows plain text is the documented behavior.
+    // False only when DPAPI failed on Windows and the value stays plain text.
     public static bool TryProtect(string plaintext, out string stored)
     {
         stored = plaintext;
         if (string.IsNullOrEmpty(plaintext) || !OperatingSystem.IsWindows())
+        {
             return true;
+        }
 
         try
         {
@@ -31,13 +30,14 @@ public static class Secret
         }
     }
 
-    // False when the value is encrypted but cannot be decrypted here (another
-    // user/machine, or corrupted); the caller must keep the stored value intact.
+    // False when it can't be decrypted here (other user/machine, corrupted); keep the stored value.
     public static bool TryUnprotect(string stored, out string plaintext)
     {
         plaintext = stored;
         if (string.IsNullOrEmpty(stored) || !stored.StartsWith(Marker, StringComparison.Ordinal))
+        {
             return true;
+        }
 
         if (!OperatingSystem.IsWindows())
         {

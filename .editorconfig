@@ -31,8 +31,12 @@ csharp_style_var_for_built_in_types = true:suggestion
 csharp_style_var_when_type_is_apparent = true:suggestion
 csharp_style_var_elsewhere = true:suggestion
 
-# Braces: allowed to be omitted for single-line bodies
-csharp_prefer_braces = when_multiline:suggestion
+# Braces: always required
+csharp_prefer_braces = true:warning
+resharper_braces_for_ifelse = required
+resharper_braces_for_for = required
+resharper_braces_for_foreach = required
+resharper_braces_for_while = required
 
 # Expression-bodied members
 csharp_style_expression_bodied_methods = when_on_single_line:silent

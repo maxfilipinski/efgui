@@ -1,7 +1,7 @@
+using EfGui.Core.Processes;
 using EfGui.Core.Profiles;
-using EfGui.Core.Services;
 
-namespace EfGui.Core.Engine;
+namespace EfGui.Core.DotnetEf;
 
 public sealed class DotnetEfRunner : IDotnetEfRunner
 {
@@ -22,8 +22,7 @@ public sealed class DotnetEfRunner : IDotnetEfRunner
         bool echoOutput = true,
         CancellationToken cancellationToken = default)
     {
-        // Profiles are validated on save, but profiles.json can be edited by hand and the
-        // DbContext name ends up in generated code.
+        // Revalidate: profiles.json can be hand-edited, and the DbContext name ends up in generated code.
         if (ProfileValidator.Validate(profile) is { } error)
         {
             _console.WriteLine(ConsoleMessageKind.Error, $"Profile '{profile.Name}' is invalid: {error}");
@@ -32,16 +31,17 @@ public sealed class DotnetEfRunner : IDotnetEfRunner
 
         var efExePath = await _installer.EnsureInstalledAsync(profile.DotnetEfVersion, cancellationToken);
         if (efExePath is null)
+        {
             return null;
+        }
 
         var helperCsproj = HelperProjectGenerator.Generate(profile);
         _console.WriteLine(ConsoleMessageKind.Info, $"Helper project: {helperCsproj}");
 
-        // dotnet-ef does not restore the startup project, so restore + build it
-        // (and the target project, transitively) ourselves.
+        // dotnet-ef doesn't restore the startup project, so build it (and the target project) first.
         var build = await _processRunner.RunAsync(
             "dotnet",
-            new[] { "build", helperCsproj, "-v", "minimal" },
+            ["build", helperCsproj, "-v", "minimal"],
             cancellationToken: cancellationToken);
 
         if (!build.Succeeded)
@@ -50,18 +50,20 @@ public sealed class DotnetEfRunner : IDotnetEfRunner
             return build;
         }
 
-        var args = new List<string>(efArgs)
-        {
+        var csprojPath = profile.CsprojPath.Trim();
+        List<string> args =
+        [
+            .. efArgs,
             "--no-build",
-            "--project", profile.CsprojPath,
+            "--project", csprojPath,
             "--startup-project", helperCsproj,
             "--context", profile.DbContextName
-        };
+        ];
 
         return await _processRunner.RunAsync(
             efExePath,
             args,
-            workingDirectory: Path.GetDirectoryName(profile.CsprojPath),
+            workingDirectory: Path.GetDirectoryName(csprojPath),
             environment: new Dictionary<string, string?>
             {
                 [HelperProjectGenerator.ConnectionStringVariable] = profile.ConnectionString

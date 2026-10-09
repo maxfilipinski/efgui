@@ -1,8 +1,8 @@
-using EfGui.Core.Engine;
+using EfGui.Core.DotnetEf;
+using EfGui.Core.Processes;
 using EfGui.Core.Profiles;
-using EfGui.Core.Services;
 
-namespace EfGui.Core.Actions;
+namespace EfGui.Core.Migrations;
 
 public sealed class MigrationActions
 {
@@ -20,7 +20,9 @@ public sealed class MigrationActions
     public int DeleteScriptsOlderThan(TimeSpan age)
     {
         if (!Directory.Exists(_scriptsDir))
+        {
             return 0;
+        }
 
         var cutoff = DateTime.UtcNow - age;
         var deleted = 0;
@@ -29,7 +31,10 @@ public sealed class MigrationActions
             try
             {
                 if (File.GetLastWriteTimeUtc(file) >= cutoff)
+                {
                     continue;
+                }
+
                 File.Delete(file);
                 deleted++;
             }
@@ -38,44 +43,41 @@ public sealed class MigrationActions
                 // Locked, e.g. open in an editor; retried on the next start.
             }
         }
+
         return deleted;
     }
 
     public async Task CreateMigrationAsync(Profile profile, string name, CancellationToken cancellationToken = default)
     {
-        await _efRunner.RunAsync(profile, new[]
-        {
-            "migrations", "add", name.Trim(),
-            "--output-dir", profile.MigrationsDir
-        }, cancellationToken: cancellationToken);
+        await AddMigrationAsync(profile, name.Trim(), cancellationToken);
     }
 
     public async Task ListMigrationsAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        await _efRunner.RunAsync(profile, new[] { "migrations", "list" }, cancellationToken: cancellationToken);
+        await _efRunner.RunAsync(profile, ["migrations", "list"], cancellationToken: cancellationToken);
     }
 
     public async Task VerifyAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        // dbcontext info loads the context through the design-time factory and prints
-        // provider/connection details without touching migrations or the database schema.
-        var result = await _efRunner.RunAsync(profile, new[] { "dbcontext", "info" }, cancellationToken: cancellationToken);
-        if (result?.Succeeded == true)
+        // dbcontext info loads the context through the factory without touching migrations or the schema.
+        var result = await _efRunner.RunAsync(profile, ["dbcontext", "info"], cancellationToken: cancellationToken);
+        if (result is { Succeeded: true })
+        {
             _console.WriteLine(ConsoleMessageKind.Success, "Profile verified: project builds and the DbContext loads.");
+        }
     }
 
-    public Task<string?> GenerateFullScriptAsync(Profile profile, CancellationToken cancellationToken = default) =>
-        GenerateScriptAsync(profile, from: null, to: null, "full", cancellationToken);
-
-    public async Task<string?> GenerateUnappliedScriptAsync(Profile profile, CancellationToken cancellationToken = default)
+    public Task<string?> GenerateFullScriptAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        var migrations = await GetMigrationsAsync(profile, connect: true, cancellationToken);
-        if (migrations is null)
-            return null;
+        return GenerateScriptAsync(profile, from: null, to: null, "full", cancellationToken);
+    }
 
-        if (migrations.Count == 0)
+    public async Task<string?> GenerateUnappliedScriptAsync(Profile profile,
+        CancellationToken cancellationToken = default)
+    {
+        if (await GetNonEmptyMigrationsAsync(profile, connect: true, "No migrations found.", cancellationToken)
+            is not { } migrations)
         {
-            _console.WriteLine(ConsoleMessageKind.Error, "No migrations found.");
             return null;
         }
 
@@ -92,22 +94,20 @@ public sealed class MigrationActions
 
     public async Task GenerateOptimizedModelAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        await _efRunner.RunAsync(profile, new[] { "dbcontext", "optimize" }, cancellationToken: cancellationToken);
+        await _efRunner.RunAsync(profile, ["dbcontext", "optimize"], cancellationToken: cancellationToken);
     }
 
     public async Task RemoveLastFromCodeAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        // No --force: that would also revert the migration in the database. Without it,
-        // EF refuses to remove a migration that has already been applied.
-        await _efRunner.RunAsync(profile, new[] { "migrations", "remove" }, cancellationToken: cancellationToken);
+        await RemoveLastMigrationAsync(profile, cancellationToken);
     }
 
-    public async Task<string?> RecreateAndGenerateScriptAsync(Profile profile, CancellationToken cancellationToken = default)
+    public async Task<string?> RecreateAndGenerateScriptAsync(Profile profile,
+        CancellationToken cancellationToken = default)
     {
-        var migrations = await GetMigrationsAsync(profile, connect: false, cancellationToken);
-        if (migrations is null || migrations.Count == 0)
+        if (await GetNonEmptyMigrationsAsync(profile, connect: false, "No migrations found to recreate.",
+                cancellationToken) is not { } migrations)
         {
-            _console.WriteLine(ConsoleMessageKind.Error, "No migrations found to recreate.");
             return null;
         }
 
@@ -116,19 +116,16 @@ public sealed class MigrationActions
 
         _console.WriteLine(ConsoleMessageKind.Info, $"Recreating migration '{name}'...");
 
-        var removed = await _efRunner.RunAsync(profile, new[] { "migrations", "remove" }, cancellationToken: cancellationToken);
-        if (removed?.Succeeded != true)
-            return null;
-
-        var added = await _efRunner.RunAsync(profile, new[]
+        if (await RemoveLastMigrationAsync(profile, cancellationToken) is not { Succeeded: true })
         {
-            "migrations", "add", name,
-            "--output-dir", profile.MigrationsDir
-        }, cancellationToken: cancellationToken);
-        if (added?.Succeeded != true)
+            return null;
+        }
+
+        if (await AddMigrationAsync(profile, name, cancellationToken) is not { Succeeded: true })
         {
             _console.WriteLine(ConsoleMessageKind.Error,
-                $"Migration '{name}' was removed but could not be re-added. Fix the error above, then create it again with the name '{name}'.");
+                $"Migration '{name}' was removed but could not be re-added. "
+                + $"Fix the error above, then create it again with the name '{name}'.");
             return null;
         }
 
@@ -137,10 +134,9 @@ public sealed class MigrationActions
 
     public async Task<string?> GenerateApplyScriptAsync(Profile profile, CancellationToken cancellationToken = default)
     {
-        var migrations = await GetMigrationsAsync(profile, connect: false, cancellationToken);
-        if (migrations is null || migrations.Count == 0)
+        if (await GetNonEmptyMigrationsAsync(profile, connect: false, "No migrations found.", cancellationToken)
+            is not { } migrations)
         {
-            _console.WriteLine(ConsoleMessageKind.Error, "No migrations found.");
             return null;
         }
 
@@ -149,12 +145,12 @@ public sealed class MigrationActions
             "apply", cancellationToken);
     }
 
-    public async Task<string?> GenerateRollbackScriptAsync(Profile profile, CancellationToken cancellationToken = default)
+    public async Task<string?> GenerateRollbackScriptAsync(Profile profile,
+        CancellationToken cancellationToken = default)
     {
-        var migrations = await GetMigrationsAsync(profile, connect: false, cancellationToken);
-        if (migrations is null || migrations.Count == 0)
+        if (await GetNonEmptyMigrationsAsync(profile, connect: false, "No migrations found.", cancellationToken)
+            is not { } migrations)
         {
-            _console.WriteLine(ConsoleMessageKind.Error, "No migrations found.");
             return null;
         }
 
@@ -163,44 +159,87 @@ public sealed class MigrationActions
             "rollback", cancellationToken);
     }
 
+    private Task<ProcessResult?> AddMigrationAsync(Profile profile, string name, CancellationToken cancellationToken)
+    {
+        return _efRunner.RunAsync(profile, ["migrations", "add", name, "--output-dir", profile.MigrationsDir],
+            cancellationToken: cancellationToken);
+    }
+
+    // No --force: it would also revert an applied migration in the database.
+    private Task<ProcessResult?> RemoveLastMigrationAsync(Profile profile, CancellationToken cancellationToken)
+    {
+        return _efRunner.RunAsync(profile, ["migrations", "remove"], cancellationToken: cancellationToken);
+    }
+
+    // Null when listing failed (already reported) or found nothing.
+    private async Task<IReadOnlyList<MigrationInfo>?> GetNonEmptyMigrationsAsync(
+        Profile profile, bool connect, string emptyMessage, CancellationToken cancellationToken)
+    {
+        var migrations = await GetMigrationsAsync(profile, connect, cancellationToken);
+        if (migrations is { Count: 0 })
+        {
+            _console.WriteLine(ConsoleMessageKind.Error, emptyMessage);
+            return null;
+        }
+
+        return migrations;
+    }
+
     private async Task<IReadOnlyList<MigrationInfo>?> GetMigrationsAsync(
         Profile profile, bool connect, CancellationToken cancellationToken)
     {
-        var args = new List<string> { "migrations", "list", "--json", "--prefix-output" };
+        List<string> args = ["migrations", "list", "--json", "--prefix-output"];
         if (!connect)
+        {
             args.Add("--no-connect");
+        }
 
-        // Quiet: the JSON payload is for parsing, not for the user to read.
         var result = await _efRunner.RunAsync(profile, args, echoOutput: false, cancellationToken);
         if (result is not { Succeeded: true })
+        {
             return null;
+        }
 
         var parsed = MigrationListParser.Parse(result.StdOutLines);
         if (parsed is null)
+        {
             _console.WriteLine(ConsoleMessageKind.Error, "Could not parse the migration list.");
+        }
 
         return parsed;
     }
 
-    // Returns the script path, or null when generation failed.
-    private async Task<string?> GenerateScriptAsync(Profile profile, string? from, string? to, string label, CancellationToken cancellationToken)
+    private async Task<string?> GenerateScriptAsync(
+        Profile profile,
+        string? from,
+        string? to,
+        string label,
+        CancellationToken cancellationToken)
     {
         Directory.CreateDirectory(_scriptsDir);
         var path = Path.Combine(
             _scriptsDir,
             $"{profile.Id:N}-{label}-{DateTime.Now:yyyyMMdd'T'HHmmss}.sql");
 
-        var args = new List<string> { "migrations", "script" };
+        List<string> args = ["migrations", "script"];
         if (from != null)
+        {
             args.Add(from);
+        }
+
         if (to != null)
+        {
             args.Add(to);
+        }
+
         args.Add("--output");
         args.Add(path);
 
         var result = await _efRunner.RunAsync(profile, args, cancellationToken: cancellationToken);
-        if (result?.Succeeded != true)
+        if (result is not { Succeeded: true })
+        {
             return null;
+        }
 
         _console.WriteLine(ConsoleMessageKind.Success, $"Script written to: {path}");
         _console.WriteLine(ConsoleMessageKind.Info, $"Folder: {_scriptsDir}");

@@ -1,32 +1,33 @@
-using EfGui.Core.Services;
+using EfGui.Core.Processes;
 
-namespace EfGui.Core.Engine;
+namespace EfGui.Core.DotnetEf;
 
 public sealed class DotnetEfInstaller
 {
-    private readonly ProcessRunner _runner;
+    private readonly ProcessRunner _processRunner;
     private readonly IConsole _console;
 
-    public DotnetEfInstaller(ProcessRunner runner, IConsole console)
+    public DotnetEfInstaller(ProcessRunner processRunner, IConsole console)
     {
-        _runner = runner;
+        _processRunner = processRunner;
         _console = console;
     }
 
-    // Returns the path to the pinned dotnet-ef executable, installing it on first use.
     public async Task<string?> EnsureInstalledAsync(string version, CancellationToken cancellationToken = default)
     {
         var toolDir = AppPaths.ToolDir(version);
         var exePath = Path.Combine(toolDir, OperatingSystem.IsWindows() ? "dotnet-ef.exe" : "dotnet-ef");
 
         if (File.Exists(exePath))
+        {
             return exePath;
+        }
 
         _console.WriteLine(ConsoleMessageKind.Info, $"Installing dotnet-ef {version}...");
 
-        var result = await _runner.RunAsync(
+        var result = await _processRunner.RunAsync(
             "dotnet",
-            new[] { "tool", "install", "dotnet-ef", "--version", version, "--tool-path", toolDir },
+            ["tool", "install", "dotnet-ef", "--version", version, "--tool-path", toolDir],
             cancellationToken: cancellationToken);
 
         if (!result.Succeeded || !File.Exists(exePath))

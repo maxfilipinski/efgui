@@ -3,7 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
-using EfGui.Output;
+using EfGui.Services;
 using EfGui.ViewModels;
 using ReactiveUI;
 using ReactiveUI.Avalonia;
@@ -13,26 +13,30 @@ namespace EfGui.Views;
 
 public sealed partial class MainWindow : ReactiveWindow<MainWindowViewModel>
 {
+    private const int VisibleCornerMargin = 24;
+
     public MainWindow()
     {
         InitializeComponent();
 
         this.WhenActivated(disposables =>
         {
-            if (ViewModel is not { } vm)
+            if (ViewModel is not { } viewModel)
+            {
                 return;
+            }
 
-            vm.ShowProfileEditor.RegisterHandler(async context =>
+            viewModel.ShowProfileEditor.RegisterHandler(async context =>
             {
                 var editor = new ProfileEditorWindow(new ProfileEditorViewModel(context.Input));
                 context.SetOutput(await editor.ShowDialog<ProfileEditorResult?>(this));
             }).DisposeWith(disposables);
 
-            vm.Confirm.RegisterHandler(async context =>
-                context.SetOutput(await ConfirmWindow.ShowAsync(this, context.Input.Title, context.Input.Message)))
+            viewModel.Confirm.RegisterHandler(async context =>
+                    context.SetOutput(await ConfirmWindow.ShowAsync(this, context.Input.Title, context.Input.Message)))
                 .DisposeWith(disposables);
 
-            vm.OpenFile.RegisterHandler(async context =>
+            viewModel.OpenFile.RegisterHandler(async context =>
             {
                 await Launcher.LaunchFileInfoAsync(new FileInfo(context.Input));
                 context.SetOutput(RxVoid.Default);
@@ -41,10 +45,10 @@ public sealed partial class MainWindow : ReactiveWindow<MainWindowViewModel>
 
         DataContextChanged += (_, _) =>
         {
-            if (DataContext is MainWindowViewModel vm)
+            if (DataContext is MainWindowViewModel viewModel)
             {
-                SidebarColumn.Width = new GridLength(vm.SidebarWidth);
-                RestoreWindowBounds(vm);
+                SidebarColumn.Width = new GridLength(viewModel.SidebarWidth);
+                RestoreWindowBounds(viewModel);
             }
         };
 
@@ -52,8 +56,10 @@ public sealed partial class MainWindow : ReactiveWindow<MainWindowViewModel>
         {
             try
             {
-                if (WindowState == WindowState.Normal && DataContext is MainWindowViewModel vm)
-                    vm.SaveWindowBounds(Position.X, Position.Y, ClientSize.Width, ClientSize.Height);
+                if (WindowState == WindowState.Normal && DataContext is MainWindowViewModel viewModel)
+                {
+                    viewModel.SaveWindowBounds(Position.X, Position.Y, ClientSize.Width, ClientSize.Height);
+                }
             }
             catch
             {
@@ -68,19 +74,22 @@ public sealed partial class MainWindow : ReactiveWindow<MainWindowViewModel>
             RoutingStrategies.Tunnel);
     }
 
-    // Keeps named-control access inside the window instead of leaking it to App.
     internal ConsoleRenderer CreateConsoleRenderer() =>
         new(ScrollViewer, SelectableTextBlock, ConsoleHint);
 
-    private void RestoreWindowBounds(MainWindowViewModel vm)
+    private void RestoreWindowBounds(MainWindowViewModel viewModel)
     {
-        if (vm.GetWindowBounds() is not { } bounds)
+        if (viewModel.GetWindowBounds() is not { } bounds)
+        {
             return;
+        }
 
         // Ignore stale bounds pointing at a disconnected monitor.
-        var probe = new PixelPoint((int)bounds.X + 24, (int)bounds.Y + 24);
-        if (!Screens.All.Any(s => s.Bounds.Contains(probe)))
+        var probe = new PixelPoint((int)bounds.X + VisibleCornerMargin, (int)bounds.Y + VisibleCornerMargin);
+        if (!Screens.All.Any(screen => screen.Bounds.Contains(probe)))
+        {
             return;
+        }
 
         WindowStartupLocation = WindowStartupLocation.Manual;
         Position = new PixelPoint((int)bounds.X, (int)bounds.Y);
@@ -91,10 +100,12 @@ public sealed partial class MainWindow : ReactiveWindow<MainWindowViewModel>
     private void Console_PointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
         if (!e.KeyModifiers.HasFlag(KeyModifiers.Control)
-            || DataContext is not MainWindowViewModel vm)
+            || DataContext is not MainWindowViewModel viewModel)
+        {
             return;
+        }
 
-        vm.ConsoleFontSize += Math.Sign(e.Delta.Y);
+        viewModel.ConsoleFontSize += Math.Sign(e.Delta.Y);
         e.Handled = true;
     }
 
@@ -102,23 +113,27 @@ public sealed partial class MainWindow : ReactiveWindow<MainWindowViewModel>
 
     private void SidebarSplitter_DragCompleted(object? sender, VectorEventArgs e)
     {
-        if (DataContext is MainWindowViewModel vm)
-            vm.SidebarWidth = SidebarColumn.ActualWidth;
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.SidebarWidth = SidebarColumn.ActualWidth;
+        }
     }
 
     private void SidebarSplitter_DoubleTapped(object? sender, RoutedEventArgs e)
     {
         SidebarColumn.Width = new GridLength(MainWindowViewModel.DefaultSidebarWidth);
-        if (DataContext is MainWindowViewModel vm)
-            vm.SidebarWidth = MainWindowViewModel.DefaultSidebarWidth;
+        if (DataContext is MainWindowViewModel viewModel)
+        {
+            viewModel.SidebarWidth = MainWindowViewModel.DefaultSidebarWidth;
+        }
     }
 
     private void ConsoleThemePreset_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is Button { DataContext: ConsoleTheme theme }
-            && DataContext is MainWindowViewModel vm)
+            && DataContext is MainWindowViewModel viewModel)
         {
-            vm.SelectedConsoleTheme = theme;
+            viewModel.SelectedConsoleTheme = theme;
             ConsoleThemeButton.Flyout?.Hide();
         }
     }

@@ -1,6 +1,5 @@
 using EfGui.Core.Profiles;
 using ReactiveUI;
-using System.Diagnostics.CodeAnalysis;
 
 namespace EfGui.ViewModels;
 
@@ -30,7 +29,7 @@ public sealed class ProfileEditorViewModel : ViewModelBase
     public ProfileEditorViewModel(Profile? existing)
     {
         IsNew = existing is null;
-        _profile = existing?.Clone() ?? new Profile();
+        _profile = existing ?? new Profile();
 
         _name = _profile.Name;
         _csprojPath = _profile.CsprojPath;
@@ -43,15 +42,22 @@ public sealed class ProfileEditorViewModel : ViewModelBase
         _connectionString = _profile.ConnectionString;
         _customCode = _profile.CustomCode;
         _useCustomCode = _profile.DbConfigMode == DbConfigMode.CustomCode;
-        _selectedProvider = DbProviderInfo.Get(_profile.DbProvider);
+        // Tolerate an unknown provider from a hand-edited profiles.json so it can be fixed here.
+        _selectedProvider = DbProviderInfo.All.FirstOrDefault(info => info.Provider == _profile.DbProvider)
+                            ?? DbProviderInfo.All[0];
+
+        PropertyChanged += (_, change) =>
+        {
+            if (change.PropertyName != nameof(ValidationError))
+            {
+                ValidationError = null;
+            }
+        };
     }
 
     public bool IsNew { get; }
 
     public string Title => IsNew ? "Add profile" : "Edit profile";
-
-    [SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Bound from XAML, which needs an instance member.")]
-    public IReadOnlyList<DbProviderInfo> Providers => DbProviderInfo.All;
 
     public string Name
     {

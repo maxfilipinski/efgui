@@ -1,7 +1,7 @@
 using EfGui.Core.Profiles;
 using EfGui.Core.Settings;
 
-namespace EfGui.Core.Tests;
+namespace EfGui.Core.Tests.Settings;
 
 public sealed class SettingsStoreTests : IDisposable
 {
@@ -59,7 +59,9 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.Equal("Password=secret", profile.ConnectionString);
         Assert.Equal("Password=secret", new SettingsStore(FilePath).Profiles[0].ConnectionString);
         if (OperatingSystem.IsWindows())
+        {
             Assert.DoesNotContain("secret", File.ReadAllText(FilePath));
+        }
     }
 
     [Fact]
@@ -81,7 +83,9 @@ public sealed class SettingsStoreTests : IDisposable
 
         SettingsStore store;
         using (new FileStream(FilePath, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
             store = new SettingsStore(FilePath);
+        }
 
         Assert.NotNull(store.LoadError);
         store.Add(new Profile { Name = "New" });

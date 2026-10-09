@@ -15,8 +15,7 @@ public sealed class SettingsStore
     private readonly string _filePath;
     private StoreData _data = new();
 
-    // Ciphertext that could not be decrypted on this machine, by profile id. Written back
-    // verbatim on save so it is not lost, unless the user has entered a new value.
+    // Undecryptable ciphertext, written back on save unless the user entered a new value.
     private readonly Dictionary<Guid, string> _unreadableSecrets = new();
 
     private bool _warnedUnencrypted;
@@ -32,17 +31,15 @@ public sealed class SettingsStore
         Load();
     }
 
-    // Set when the file exists but could not be read. Saving is then disabled for the
-    // session so the unreadable file is never overwritten with an empty store.
+    // When set, saving is disabled so an unreadable file is never overwritten with an empty store.
     public string? LoadError { get; private set; }
 
-    // Raised at most once per session when a connection string had to be saved unencrypted.
     public event Action<string>? UnencryptedSecretSaved;
 
     public IReadOnlyList<Profile> Profiles => _data.Profiles;
 
     public Profile? LastSelectedProfile =>
-        _data.Profiles.FirstOrDefault(p => p.Id == _data.LastSelectedProfileId)
+        _data.Profiles.FirstOrDefault(profile => profile.Id == _data.LastSelectedProfileId)
         ?? _data.Profiles.FirstOrDefault();
 
     public void Add(Profile profile)
@@ -53,9 +50,11 @@ public sealed class SettingsStore
 
     public void Update(Profile profile)
     {
-        var index = _data.Profiles.FindIndex(p => p.Id == profile.Id);
+        var index = _data.Profiles.FindIndex(stored => stored.Id == profile.Id);
         if (index < 0)
+        {
             throw new InvalidOperationException($"Profile {profile.Id} not found.");
+        }
 
         _data.Profiles[index] = profile;
         Save();
@@ -63,14 +62,16 @@ public sealed class SettingsStore
 
     public void Remove(Guid profileId)
     {
-        _data.Profiles.RemoveAll(p => p.Id == profileId);
+        _data.Profiles.RemoveAll(profile => profile.Id == profileId);
         Save();
     }
 
     public void SetLastSelected(Guid profileId)
     {
         if (_data.LastSelectedProfileId == profileId)
+        {
             return;
+        }
 
         _data.LastSelectedProfileId = profileId;
         Save();
@@ -81,7 +82,9 @@ public sealed class SettingsStore
     public void SetConsoleBackground(string hex)
     {
         if (_data.ConsoleBackground == hex)
+        {
             return;
+        }
 
         _data.ConsoleBackground = hex;
         Save();
@@ -92,15 +95,17 @@ public sealed class SettingsStore
     public void SetConsoleFontSize(double size)
     {
         if (Math.Abs(_data.ConsoleFontSize - size) < 0.5)
+        {
             return;
+        }
 
         _data.ConsoleFontSize = size;
         Save();
     }
 
     public (double X, double Y, double Width, double Height)? WindowBounds =>
-        _data is { WindowX: { } x, WindowY: { } y, WindowWidth: { } w, WindowHeight: { } h }
-            ? (x, y, w, h)
+        _data is { WindowX: { } x, WindowY: { } y, WindowWidth: { } width, WindowHeight: { } height }
+            ? (x, y, width, height)
             : null;
 
     public void SetWindowBounds(double x, double y, double width, double height)
@@ -117,7 +122,9 @@ public sealed class SettingsStore
     public void SetSidebarWidth(double width)
     {
         if (Math.Abs(_data.SidebarWidth - width) < 0.5)
+        {
             return;
+        }
 
         _data.SidebarWidth = width;
         Save();
@@ -126,18 +133,22 @@ public sealed class SettingsStore
     private void Load()
     {
         if (!File.Exists(_filePath))
+        {
             return;
+        }
 
         try
         {
             var json = File.ReadAllText(_filePath);
             _data = JsonSerializer.Deserialize<StoreData>(json, JsonOptions) ?? new StoreData();
 
-            // Freshly deserialized, so decrypting in place touches nothing callers hold.
             foreach (var profile in _data.Profiles)
             {
                 if (!Secret.TryUnprotect(profile.ConnectionString, out var plaintext))
+                {
                     _unreadableSecrets[profile.Id] = profile.ConnectionString;
+                }
+
                 profile.ConnectionString = plaintext;
             }
         }
@@ -167,7 +178,9 @@ public sealed class SettingsStore
     private void Save()
     {
         if (LoadError != null)
+        {
             return;
+        }
 
         Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
 
@@ -192,12 +205,17 @@ public sealed class SettingsStore
         if (_unreadableSecrets.TryGetValue(profile.Id, out var ciphertext))
         {
             if (profile.ConnectionString.Length == 0)
+            {
                 return ciphertext;
+            }
+
             _unreadableSecrets.Remove(profile.Id);
         }
 
         if (Secret.TryProtect(profile.ConnectionString, out var stored))
+        {
             return stored;
+        }
 
         if (!_warnedUnencrypted)
         {
@@ -210,7 +228,7 @@ public sealed class SettingsStore
 
     private sealed record StoreData
     {
-        public List<Profile> Profiles { get; set; } = new();
+        public List<Profile> Profiles { get; set; } = [];
         public Guid? LastSelectedProfileId { get; set; }
         public string ConsoleBackground { get; set; } = "#0C0C0C";
         public double ConsoleFontSize { get; set; } = 13;

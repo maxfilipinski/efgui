@@ -5,7 +5,6 @@ namespace EfGui;
 
 internal sealed class Program
 {
-    // Don't touch Avalonia or SynchronizationContext-dependent code before the lifetime starts.
     [STAThread]
     public static void Main(string[] args) => BuildAvaloniaApp()
         .StartWithClassicDesktopLifetime(args);

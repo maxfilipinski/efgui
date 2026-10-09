@@ -1,7 +1,7 @@
-using EfGui.Core.Engine;
+using EfGui.Core.DotnetEf;
 using EfGui.Core.Profiles;
 
-namespace EfGui.Core.Tests;
+namespace EfGui.Core.Tests.DotnetEf;
 
 public class HelperProjectGeneratorTests
 {
@@ -61,7 +61,6 @@ public class HelperProjectGeneratorTests
         var (csproj, _) = HelperProjectGenerator.BuildSources(profile);
 
         Assert.Contains("Pomelo.EntityFrameworkCore.MySql", csproj);
-        // Falls back to the provider's independent default, not the EF Core version.
         Assert.DoesNotContain("Pomelo.EntityFrameworkCore.MySql\" Version=\"10.0.8\"", csproj);
     }
 

@@ -17,7 +17,6 @@
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="Margin" Value="0 2"/>
       </Style>
-      <!-- Captions wrap instead of clipping when the sidebar is dragged narrow. -->
       <Style Selector="StackPanel.sidebar > Button TextBlock">
         <Setter Property="TextWrapping" Value="Wrap"/>
         <Setter Property="TextAlignment" Value="Center"/>
@@ -37,7 +36,6 @@
       <Style Selector="GridSplitter#SidebarSplitter:pointerover">
         <Setter Property="Background" Value="#40808080"/>
       </Style>
-      <!-- Always occupies its row; fades in instead of shifting the layout. -->
       <Style Selector="ProgressBar#BusyBar">
         <Setter Property="Opacity" Value="0"/>
         <Setter Property="Transitions">
@@ -53,14 +51,11 @@
 
     <Grid x:Name="RootGrid" RowDefinitions="Auto, *, Auto">
       <Grid.ColumnDefinitions>
-        <!-- Min fits the longest action caption; the console column min (not a fixed max
-             here) is what bounds how far the sidebar can grow. -->
         <ColumnDefinition Width="240" MinWidth="200"/>
         <ColumnDefinition Width="Auto"/>
         <ColumnDefinition Width="*" MinWidth="320"/>
       </Grid.ColumnDefinitions>
-
-      <!-- Top bar: profile cluster only. -->
+      
       <StackPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
                   Margin="16 16 16 28" Orientation="Horizontal" Spacing="8"
                   HorizontalAlignment="Center">
@@ -150,7 +145,7 @@
                       BorderBrush="#60808080" BorderThickness="1"/>
               <Button.Flyout>
                 <Flyout Placement="BottomEdgeAlignedRight">
-                  <ItemsControl ItemsSource="{Binding ConsoleThemes}">
+                  <ItemsControl ItemsSource="{x:Static vm:MainWindowViewModel.ConsoleThemePresets}">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="vm:ConsoleTheme">
                         <Button Background="Transparent" HorizontalAlignment="Stretch"
@@ -190,8 +185,6 @@
         </Border>
       </Grid>
 
-      <!-- Lives inside the 16px bottom gutter (4+4+8) so the gap below the console
-           matches the right-hand gutter and nothing shifts when it fades in. -->
       <ProgressBar x:Name="BusyBar" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
                    Height="4" Margin="16 4 16 8"
                    IsIndeterminate="{Binding IsBusy}"

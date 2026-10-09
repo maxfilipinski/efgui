@@ -1,6 +1,6 @@
-using EfGui.Core.Engine;
+using EfGui.Core.Migrations;
 
-namespace EfGui.Core.Tests;
+namespace EfGui.Core.Tests.Migrations;
 
 public class MigrationNameTests
 {

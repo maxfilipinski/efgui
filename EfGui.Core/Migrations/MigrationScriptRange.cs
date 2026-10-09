@@ -1,8 +1,5 @@
-namespace EfGui.Core.Engine;
+namespace EfGui.Core.Migrations;
 
-// Pure helpers translating a migration list into the [from] [to] arguments
-// `dotnet ef migrations script` expects. "0" is EF's sentinel for "before the
-// first migration".
 public static class MigrationScriptRange
 {
     public const string Start = "0";
@@ -14,8 +11,8 @@ public static class MigrationScriptRange
         migrations[^1].Id;
 
     public static string LastAppliedId(IReadOnlyList<MigrationInfo> migrations) =>
-        migrations.LastOrDefault(m => m.Applied)?.Id ?? Start;
+        migrations.LastOrDefault(migration => migration.Applied)?.Id ?? Start;
 
     public static bool AnyUnapplied(IReadOnlyList<MigrationInfo> migrations) =>
-        migrations.Any(m => !m.Applied);
+        migrations.Any(migration => !migration.Applied);
 }

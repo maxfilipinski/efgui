@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace EfGui.Core.Engine;
+namespace EfGui.Core;
 
 public static partial class CSharpIdentifier
 {
@@ -13,7 +13,6 @@ public static partial class CSharpIdentifier
     public static bool IsValid(string? name) =>
         !string.IsNullOrWhiteSpace(name) && SimpleRegex().IsMatch(name.Trim());
 
-    // Namespace-qualified, e.g. "MyApp.Data.AppDbContext".
     public static bool IsValidQualified(string? name) =>
         !string.IsNullOrWhiteSpace(name) && QualifiedRegex().IsMatch(name.Trim());
 }

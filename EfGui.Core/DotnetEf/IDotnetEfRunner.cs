@@ -1,7 +1,7 @@
+using EfGui.Core.Processes;
 using EfGui.Core.Profiles;
-using EfGui.Core.Services;
 
-namespace EfGui.Core.Engine;
+namespace EfGui.Core.DotnetEf;
 
 public interface IDotnetEfRunner
 {

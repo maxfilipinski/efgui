@@ -22,7 +22,7 @@ public sealed partial class ProfileEditorWindow : Window
 
     private ProfileEditorViewModel ViewModel => (ProfileEditorViewModel)DataContext!;
 
-    // async void is unavoidable for an event handler, so nothing may escape it.
+    // async void event handler: an escaping exception would crash the app.
     private async void BrowseCsproj_Click(object? sender, RoutedEventArgs e)
     {
         try
@@ -30,15 +30,14 @@ public sealed partial class ProfileEditorWindow : Window
             var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
                 Title = "Select project file",
-                FileTypeFilter = new[]
-                {
-                    new FilePickerFileType("C# project") { Patterns = new[] { "*.csproj" } }
-                }
+                FileTypeFilter = [new FilePickerFileType("C# project") { Patterns = ["*.csproj"] }]
             });
 
             var path = files.Count > 0 ? files[0].TryGetLocalPath() : null;
             if (path != null)
+            {
                 ViewModel.CsprojPath = path;
+            }
         }
         catch (Exception ex)
         {
@@ -50,7 +49,9 @@ public sealed partial class ProfileEditorWindow : Window
     {
         var profile = ViewModel.TryBuildProfile();
         if (profile != null)
+        {
             Close(new ProfileEditorResult(profile, Deleted: false));
+        }
     }
 
     private void Cancel_Click(object? sender, RoutedEventArgs e)
@@ -60,7 +61,6 @@ public sealed partial class ProfileEditorWindow : Window
 
     private void Delete_Click(object? sender, RoutedEventArgs e)
     {
-        // First click arms the button, second click confirms.
         if (!_deleteArmed)
         {
             _deleteArmed = true;

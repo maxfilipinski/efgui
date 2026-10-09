@@ -8,7 +8,6 @@ public sealed class Profile
 
     public string CsprojPath { get; set; } = "";
 
-    // Fully qualified, e.g. "MyApp.Data.AppDbContext".
     public string DbContextName { get; set; } = "";
 
     // Relative to the project directory.
@@ -30,7 +29,6 @@ public sealed class Profile
 
     public string ConnectionString { get; set; } = "";
 
-    // C# statements with an "optionsBuilder" variable in scope; used in CustomCode mode.
     public string CustomCode { get; set; } = "";
 
     public Profile Clone() => (Profile)MemberwiseClone();

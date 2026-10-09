@@ -1,6 +1,6 @@
-using EfGui.Core.Engine;
+using EfGui.Core.Migrations;
 
-namespace EfGui.Core.Tests;
+namespace EfGui.Core.Tests.Migrations;
 
 public class MigrationListParserTests
 {
@@ -45,7 +45,7 @@ public class MigrationListParserTests
     [Fact]
     public void Empty_array_is_empty_list_not_null()
     {
-        var result = MigrationListParser.Parse(new[] { "data: []" });
+        var result = MigrationListParser.Parse(["data: []"]);
 
         Assert.NotNull(result);
         Assert.Empty(result!);
@@ -54,7 +54,7 @@ public class MigrationListParserTests
     [Fact]
     public void Returns_null_when_no_json_present()
     {
-        var result = MigrationListParser.Parse(new[] { "info: building", "Build succeeded." });
+        var result = MigrationListParser.Parse(["info: building", "Build succeeded."]);
 
         Assert.Null(result);
     }

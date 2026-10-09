@@ -1,6 +1,5 @@
 namespace EfGui.Core;
 
-// Single source of truth for the locations EfGui reads and writes.
 public static class AppPaths
 {
     private static readonly string LocalRoot = Path.Combine(
@@ -20,4 +19,6 @@ public static class AppPaths
         Path.Combine(LocalRoot, "helpers", profileId.ToString("N"));
 
     public static string ScriptsDir => Path.Combine(LocalRoot, "scripts");
+
+    public static string ErrorLogFile => Path.Combine(LocalRoot, "errors.log");
 }
